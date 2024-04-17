@@ -70,9 +70,9 @@ public class TestContainerBalancerOperations {
    * @throws Exception
    */
   @Test
-  @Unhealthy("Since the cluster doesn't have " +
-      "unbalanced nodes, ContainerBalancer stops before the assertion checks " +
-      "whether balancer is running.")
+//  @Unhealthy("Since the cluster doesn't have " +
+//      "unbalanced nodes, ContainerBalancer stops before the assertion checks " +
+//      "whether balancer is running.")
   public void testContainerBalancerCLIOperations() throws Exception {
     // test normally start and stop
     boolean running = containerBalancerClient.getContainerBalancerStatus();
