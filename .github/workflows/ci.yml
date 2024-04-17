@@ -26,9 +26,9 @@ jobs:
       GITHUB_CONTEXT: ${{ toJson(github) }}
     outputs:
       acceptance-suites: false
-      needs-basic-check: false
+      needs-basic-check: ${{ steps.categorize-basic-checks.outputs.needs-basic-check }}
       needs-native-check: false
-      basic-checks: false
+      basic-checks: ${{ steps.categorize-basic-checks.outputs.basic-checks }}
       needs-build: ${{ steps.selective-checks.outputs.needs-build }}
       needs-compile: false
       needs-compose-tests: false
