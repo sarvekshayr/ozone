@@ -82,11 +82,11 @@ public class TestContainerBalancerOperations {
     Optional<Integer> maxDatanodesPercentageToInvolvePerIteration =
         Optional.of(100);
     Optional<Long> maxSizeToMovePerIterationInGB = Optional.of(1L);
-    Optional<Long> maxSizeEnteringTargetInGB = Optional.of(1L);
-    Optional<Long> maxSizeLeavingSourceInGB = Optional.of(1L);
-    Optional<Integer> balancingInterval = Optional.of(1);
-    Optional<Integer> moveTimeout = Optional.of(1);
-    Optional<Integer> moveReplicationTimeout = Optional.of(1);
+    Optional<Long> maxSizeEnteringTargetInGB = Optional.of(6L);
+    Optional<Long> maxSizeLeavingSourceInGB = Optional.of(6L);
+    Optional<Integer> balancingInterval = Optional.of(70);
+    Optional<Integer> moveTimeout = Optional.of(65);
+    Optional<Integer> moveReplicationTimeout = Optional.of(50);
     Optional<Boolean> networkTopologyEnable = Optional.of(false);
     Optional<String> includeNodes = Optional.of("");
     Optional<String> excludeNodes = Optional.of("");
