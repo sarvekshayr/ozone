@@ -454,7 +454,7 @@ jobs:
           java-version: 8
       - name: Execute tests
         continue-on-error: true
-        run: hadoop-ozone/dev-support/checks/integration.sh - Dtest=TestContainerBalancerOperations
+        run: hadoop-ozone/dev-support/checks/integration.sh -Dtest=TestContainerBalancerOperations
         env:
           ITERATIONS: 10
       - name: Summary of failures
