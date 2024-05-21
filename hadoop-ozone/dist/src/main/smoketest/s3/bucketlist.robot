@@ -31,6 +31,7 @@ ${BUCKET}             generated
 List buckets
     ${result} =         Execute AWSS3APICli     list-buckets | jq -r '.Buckets[].Name'
                         Should contain          ${result}    ${BUCKET}
+    Log To Console       \n\nBucket Layout: ${BUCKET_LAYOUT}\n\n
 
 Get bucket info with Ozone Shell to check the owner field
     Pass Execution If   '${SECURITY_ENABLED}' == 'false'    Skipping this check as security is not enabled
