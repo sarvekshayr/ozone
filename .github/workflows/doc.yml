@@ -15,7 +15,9 @@
 name: xml-to-md
 
 on:
-  workflow_call:
+  push:
+    branches:
+      - master
 
 jobs:
   xml-to-md:
