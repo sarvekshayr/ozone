@@ -27,3 +27,4 @@ RESULT=$?
 cp -r "$DIR/../compose/result" "$DIR"
 exit $RESULT
 
+
