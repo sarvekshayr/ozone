@@ -17,7 +17,7 @@ name: xml-to-md
 on:
   push:
     branches:
-      - HDDS-11072
+      - master
 
 jobs:
   xml-to-md:
