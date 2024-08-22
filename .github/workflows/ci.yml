@@ -651,4 +651,3 @@ jobs:
           name: coverage
           path: target/coverage
         continue-on-error: true
-
