@@ -234,7 +234,7 @@ jobs:
         with:
           repository: sarvekshayr/ozone-site
           ref: 'HDDS-9225-website-v2'
-          token: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           path: ozone-site
       - name: List directories for debugging
         run: |
