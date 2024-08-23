@@ -224,6 +224,8 @@ jobs:
           git push origin HEAD:test-branch-2
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create --title "[Auto] Update Configurations.md" --body "This is an automated pull request."
       - name: Checkout ozone-site repository
@@ -254,12 +256,10 @@ jobs:
           git add docs/05-administrator-guide/02-configuration/configurations.md
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
           git push origin HEAD:HDDS-9225-website-v2
-      - name: Create Pull Request in apache/ozone
-        if: env.hashes_differ == 'true'
-        run: |
-          gh pr create --title "[Auto] Update Configurations.md" --body "This is an automated pull request."
       - name: Create Pull Request in apache/ozone-site
         if: env.hashes_differ == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd ozone-site
           gh pr create --title "[Auto] Update configurations.md page" --body "This is an automated pull request from the ozone repository."
