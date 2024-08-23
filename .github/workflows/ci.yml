@@ -234,7 +234,7 @@ jobs:
         with:
           repository: sarvekshayr/ozone-site
           ref: 'HDDS-9225-website-v2'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
           path: ozone-site
       - name: List directories for debugging
         run: |
@@ -246,8 +246,6 @@ jobs:
           cp hadoop-hdds/docs/content/tools/Configurations.md ozone-site/docs/05-administrator-guide/02-configuration/configurations.md
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           cd ozone-site 
           git config user.name "github-actions[bot]"
