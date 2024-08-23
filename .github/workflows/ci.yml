@@ -171,7 +171,7 @@ jobs:
       - build
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout repository
+      - name: Checkout project
         uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -240,19 +240,18 @@ jobs:
         run: |
           echo "Listing directories in ozone-site/docs"
           find ozone-site/docs -type d
-      - name: Configure Git for ozone-site repository
-        run: |
-          cd ozone-site
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
       - name: Copy MD file to ozone-site repository
         if: env.hashes_differ == 'true'
         run: |
           cp hadoop-hdds/docs/content/tools/Configurations.md ozone-site/docs/05-administrator-guide/02-configuration/configurations.md
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           cd ozone-site 
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/05-administrator-guide/02-configuration/configurations.md
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
           git push origin HEAD:HDDS-9225-website-v2
