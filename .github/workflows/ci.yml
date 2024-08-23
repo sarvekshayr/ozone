@@ -246,7 +246,7 @@ jobs:
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
         run: |
-          cd ozone-site
+          cd ozone-site 
           git add docs/*-administrative-guide/*-configuration/configurations.md
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
           git push origin HEAD:HDDS-9225-website-v2
