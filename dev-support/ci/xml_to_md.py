@@ -56,20 +56,20 @@ def parse_xml_file(xml_content):
 
 def generate_markdown(properties):
     markdown = f"""
-        ## Ozone Configuration Keys
-        This page provides a comprehensive overview of the configuration keys available in Ozone.
-        ### Configuration Keys
-        """
+## Ozone Configuration Keys
+This page provides a comprehensive overview of the configuration keys available in Ozone.
+### Configuration Keys
+"""
 
     for prop in sorted(properties.values(), key=lambda p: p.name):
         markdown += f"""
-            | **Name**        | `{prop.name}` |
-            |:----------------|:----------------------------|
-            | **Value**       | {prop.value} |
-            | **Tag**         | {prop.tag} |
-            | **Description** | {prop.description} |
-            --------------------------------------------------------------------------------
-            """
+| **Name**        | `{prop.name}` |
+|:----------------|:----------------------------|
+| **Value**       | {prop.value} |
+| **Tag**         | {prop.tag} |
+| **Description** | {prop.description} |
+--------------------------------------------------------------------------------
+"""
     return markdown
 
 def main():
