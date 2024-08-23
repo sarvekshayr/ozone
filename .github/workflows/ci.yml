@@ -188,12 +188,35 @@ jobs:
           tar -xzf ozone-bin/ozone-*-SNAPSHOT.tar.gz -C ozone-bin/extracted
       - name: Run the Python script to convert XML properties into Markdown
         run: python3 dev-support/ci/xml_to_md.py ozone-bin/extracted > hadoop-hdds/docs/content/tools/Configurations.md
-      - name: Create Pull Request in apache/ozone
-        uses: peter-evans/create-pull-request@v4
-        with:
-          commit-message: "[Auto] Update Configurations.md from $GITHUB_SHA"
-          title: "[Auto] Update Configurations.md from $GITHUB_SHA"
-          body: "This is an Automated pull request generated from build-config-doc workflow."
+      - name: Calculate hash of the existing Configurations.md
+        id: existing-hash
+        run: |
+          if [ -f hadoop-hdds/docs/content/tools/Configurations.md ]; then
+            sha256sum hadoop-hdds/docs/content/tools/Configurations.md | awk '{ print $1 }'
+          else
+            echo "No existing file found."
+          fi
+      - name: Calculate hash of the new Configurations.md
+        id: new-hash
+        run: sha256sum hadoop-hdds/docs/content/tools/Configurations.md | awk '{ print $1 }'
+      - name: Compare hashes and decide to commit
+        run: |
+          if [ "${{ steps.existing-hash.outputs.hash }}" != "${{ steps.new-hash.outputs.hash }}" ]; then
+            echo "Configurations.md has changed, creating a PR."
+          else
+            echo "Configurations.md is unchanged, skipping PR creation."
+            exit 0
+          fi
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Commit and push changes to apache/ozone
+        run: |
+          git add hadoop-hdds/docs/content/tools/Configurations.md
+          git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
+          git push origin HEAD:test-branch-2
+
       - name: Checkout ozone-site repository
         uses: actions/checkout@v4
         with:
@@ -201,15 +224,26 @@ jobs:
           ref: 'HDDS-9225-website-v2'
           token: ${{ secrets.GITHUB_TOKEN }}
           path: ozone-site
+
       - name: Copy MD file to ozone-site repository
         run: |
           cp hadoop-hdds/docs/content/tools/Configurations.md ozone-site/docs/*-administrative-guide/*-configuration/configurations.md
+
+      - name: Commit and push changes to apache/ozone-site
+        run: |
+          cd ozone-site
+          git add docs/*-administrative-guide/*-configuration/configurations.md
+          git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
+          git push origin HEAD:HDDS-9225-website-v2
+
+      - name: Create Pull Request in apache/ozone
+        run: |
+          gh pr create --title "[Auto] Update Configurations.md" --body "This is an automated pull request."
+
       - name: Create Pull Request in apache/ozone-site
-        uses: peter-evans/create-pull-request@v4
-        with:
-          commit-message: "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
-          title: "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
-          body: "This is an Automated pull request generated from ozone."
+        run: |
+          cd ozone-site
+          gh pr create --title "[Auto] Update configurations.md page" --body "This is an automated pull request from the ozone repository."
   compile:
     needs:
       - build-info
