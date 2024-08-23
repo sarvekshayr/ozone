@@ -242,7 +242,7 @@ jobs:
         if: env.hashes_differ == 'true'
         run: |
           cd ozone-site 
-          git add docs/*-administrative-guide/*-configuration/configurations.md
+          git add docs/05-administrator-guide/02-configuration/configurations.md
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
           git push origin HEAD:HDDS-9225-website-v2
       - name: Create Pull Request in apache/ozone
