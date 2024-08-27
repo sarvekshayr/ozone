@@ -236,8 +236,12 @@ jobs:
         if: env.hashes_differ == 'true'
         run: |
           TARGET_DIR=$(find ozone-site/docs -type d -name '*-administrative-guide' -exec find {} -type d -name '*-configuration' -print -quit \;)
-          echo "$TARGET_DIR"
-          chmod +w "$TARGET_DIR/configurations.md"
+          echo "Target directory: $TARGET_DIR"
+          if [ -z "$TARGET_DIR" ]; then
+            echo "Target directory not found."
+            exit 1
+          fi
+          echo "Target directory: $TARGET_DIR"
           cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/configurations.md"
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
