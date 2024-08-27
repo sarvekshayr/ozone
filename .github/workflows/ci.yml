@@ -211,21 +211,18 @@ jobs:
             echo "Configurations.md is unchanged, skipping commit and PR creation."
             echo "hashes_differ=false" >> $GITHUB_ENV
           fi
-      - name: Configure Git
-        if: env.hashes_differ == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
       - name: Commit and push changes to apache/ozone
         if: env.hashes_differ == 'true'
         run: |
+          git config --global user.name 'Github Actions'
+          git config --global user.email 'noreply@github.com'
           git add hadoop-hdds/docs/content/tools/Configurations.md
           git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
           git push origin HEAD:test-branch-2
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create --title "[Auto] Update Configurations.md" --body "This is an automated pull request."
       - name: Checkout ozone-site repository
@@ -234,31 +231,27 @@ jobs:
         with:
           repository: sarvekshayr/ozone-site
           ref: 'HDDS-9225-website-v2'
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           path: ozone-site
-      - name: List directories for debugging
-        run: |
-          echo "Listing directories in ozone-site/docs"
-          find ozone-site/docs -type d
       - name: Copy MD file to ozone-site repository
         if: env.hashes_differ == 'true'
         run: |
           TARGET_DIR=$(find ozone-site/docs -type d -name '*-administrative-guide' -exec find {} -type d -name '*-configuration' -print -quit \;)
           echo "$TARGET_DIR"
-          cp hadoop-hdds/docs/content/tools/Configurations.md ozone-site/docs/05-administrator-guide/02-configuration/configurations.md
+          cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/configurations.md"
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
         run: |
           cd ozone-site 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/05-administrator-guide/02-configuration/configurations.md
+          git config --global user.name 'Github Actions'
+          git config --global user.email 'noreply@github.com'
+          cd ..
+          git add "$TARGET_DIR/configurations.md"
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
           git push origin HEAD:HDDS-9225-website-v2
       - name: Create Pull Request in apache/ozone-site
         if: env.hashes_differ == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
         run: |
           cd ozone-site
           gh pr create --title "[Auto] Update configurations.md page" --body "This is an automated pull request from the ozone repository."
