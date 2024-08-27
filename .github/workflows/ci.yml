@@ -222,7 +222,7 @@ jobs:
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create --title "[Auto] Update Configurations.md" --body "This is an automated pull request."
       - name: Checkout ozone-site repository
@@ -251,7 +251,7 @@ jobs:
       - name: Create Pull Request in apache/ozone-site
         if: env.hashes_differ == 'true'
         env:
-          token: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           cd ozone-site
           gh pr create --title "[Auto] Update configurations.md page" --body "This is an automated pull request from the ozone repository."
