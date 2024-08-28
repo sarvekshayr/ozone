@@ -241,17 +241,15 @@ jobs:
             echo "Target directory not found."
             exit 1
           fi
-          echo "$TARGET_DIR" > target_dir.txt
           cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/configurations.md"
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
         run: |
-          TARGET_DIR=$(cat target_dir.txt)
           cd ozone-site 
           git config --global user.name 'Github Actions'
           git config --global user.email 'noreply@github.com'
-          cd ..
-          git add "$TARGET_DIR/configurations.md"
+          ADD_FILE=$(find docs -type d -name '*-administrator-guide' -exec find {} -type d -name '*-configuration' -print -quit \;)
+          git add "$ADD_FILE/configurations.md"
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
           git push origin HEAD:HDDS-9225-website-v2
       - name: Create Pull Request in apache/ozone-site
