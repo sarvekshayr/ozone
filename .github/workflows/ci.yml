@@ -244,6 +244,8 @@ jobs:
           cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/configurations.md"
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           cd ozone-site 
           git config --global user.name 'Github Actions'
