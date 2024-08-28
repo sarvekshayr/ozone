@@ -241,9 +241,12 @@ jobs:
             echo "Target directory not found."
             exit 1
           fi
+          echo "TARGET_DIR=$TARGET_DIR" >> $GITHUB_ENV
           cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/configurations.md"
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
+        env:
+          TARGET_DIR: ${{ env.TARGET_DIR }}
         run: |
           cd ozone-site 
           git config --global user.name 'Github Actions'
