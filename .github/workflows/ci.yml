@@ -229,7 +229,7 @@ jobs:
         if: env.hashes_differ == 'true'
         uses: actions/checkout@v4
         with:
-          repository: sarvekshayr/ozone-site
+          repository: apache/ozone-site
           ref: 'HDDS-9225-website-v2'
           path: ozone-site
       - name: Copy MD file to ozone-site repository
