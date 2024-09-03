@@ -231,6 +231,7 @@ jobs:
         with:
           repository: apache/ozone-site
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: HDDS-9225-website-v2
           path: ozone-site
       - name: Copy MD file to ozone-site repository
         if: env.hashes_differ == 'true'
