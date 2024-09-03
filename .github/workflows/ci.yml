@@ -254,7 +254,7 @@ jobs:
           ADD_FILE=$(find docs -type d -name '*-administrator-guide' -exec find {} -type d -name '*-configuration' -print -quit \;)
           git add "$ADD_FILE/configurations.md"
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
-          git push origin HEAD:HDDS-9225-website-v2
+          git push origin HEAD:config-doc-update-from-$COMMIT_SHA
       - name: Create Pull Request in apache/ozone-site
         if: env.hashes_differ == 'true'
         env:
