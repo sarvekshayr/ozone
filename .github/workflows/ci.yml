@@ -192,8 +192,8 @@ jobs:
       - name: Check if Configurations.md file has changed
         id: hash-check
         run: |
-          HASH_FILES=$(hashFiles('hadoop-hdds/docs/content/tools/Configurations.md'))
-          PREV_HASH=$(hashFiles('hadoop-hdds/docs/content/tools/Configurations.md@{previous-commit}'))
+          HASH_FILES="${{ hashFiles('hadoop-hdds/docs/content/tools/Configurations.md') }}"
+          PREV_HASH="${{ hashFiles('hadoop-hdds/docs/content/tools/Configurations.md@{previous-commit}') }}"
           if [ "$HASH_FILES" != "$PREV_HASH" ]; then
             echo "Configurations.md has changed, proceeding to commit and create PRs."
             echo "hashes_differ=true" >> $GITHUB_ENV
