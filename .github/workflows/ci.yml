@@ -169,6 +169,7 @@ jobs:
   build-config-doc:
     needs:
       - build
+    if: ${{ github.repository == 'sarvekshayr/ozone' && github.event_name == 'push' && github.ref_name == 'test-branch-2' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout project
@@ -185,26 +186,26 @@ jobs:
       - name: Extract the source tarball
         run: |
           mkdir -p ozone-bin/extracted
-          tar -xzf ozone-bin/ozone-*-SNAPSHOT.tar.gz -C ozone-bin/extracted
-      - name: Calculate hash of the existing Configurations.md
-        id: existing-hash
-        run: |
-          if [ -f hadoop-hdds/docs/content/tools/Configurations.md ]; then
-            sha256sum hadoop-hdds/docs/content/tools/Configurations.md | awk '{ print $1 }' > existing_hash.txt
-          else
-            echo "No existing file found." > existing_hash.txt
-          fi
+          tar -xzf ozone-bin/ozone-*.tar.gz -C ozone-bin/extracted
+#      - name: Calculate hash of the existing Configurations.md
+#        id: existing-hash
+#        run: |
+#          if [ -f hadoop-hdds/docs/content/tools/Configurations.md ]; then
+#            sha256sum hadoop-hdds/docs/content/tools/Configurations.md | awk '{ print $1 }' > existing_hash.txt
+#          else
+#            echo "No existing file found." > existing_hash.txt
+#          fi
       - name: Run the Python script to convert XML properties into Markdown
         run: python3 dev-support/ci/xml_to_md.py ozone-bin/extracted > hadoop-hdds/docs/content/tools/Configurations.md
-      - name: Calculate hash of the new Configurations.md
-        id: new-hash
-        run: sha256sum hadoop-hdds/docs/content/tools/Configurations.md | awk '{ print $1 }' > new_hash.txt
-      - name: Compare hashes and decide to commit
+#      - name: Calculate hash of the new Configurations.md
+#        id: new-hash
+#        run: sha256sum hadoop-hdds/docs/content/tools/Configurations.md | awk '{ print $1 }' > new_hash.txt
+      - name: Check if Configurations.md file has changed
         id: hash-check
         run: |
-          EXISTING_HASH=$(cat existing_hash.txt)
-          NEW_HASH=$(cat new_hash.txt)
-          if [ "$EXISTING_HASH" != "$NEW_HASH" ]; then
+          HASH_FILES=$(hashFiles('hadoop-hdds/docs/content/tools/Configurations.md'))
+          PREV_HASH=$(hashFiles('hadoop-hdds/docs/content/tools/Configurations.md@{previous-commit}'))
+          if [ "$HASH_FILES" != "$PREV_HASH" ]; then
             echo "Configurations.md has changed, proceeding to commit and create PRs."
             echo "hashes_differ=true" >> $GITHUB_ENV
           else
@@ -216,15 +217,18 @@ jobs:
         run: |
           git config --global user.name 'Github Actions'
           git config --global user.email 'noreply@github.com'
+          git checkout -b config-doc-update-from-$GITHUB_SHA master
           git add hadoop-hdds/docs/content/tools/Configurations.md
           git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
-          git push origin HEAD:test-branch-2
+          git push origin HEAD:config-doc-update-from-$GITHUB_SHA
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create --title "[Auto] Update Configurations.md" --body "This is an automated pull request."
+          gh pr create --base master --head config-doc-update-from-$GITHUB_SHA \
+          --title "[Auto] Update Configurations.md" \
+          --body "This is an automated pull request to update the website documentation of Ozone's default configuration. It was triggered by the workflow {{ github.workflow }} run on {{ github.ref_name }}. Please delete the ${{ github.head_ref }} branch from the repo when the PR is merged or closed."
       - name: Checkout ozone-site repository
         if: env.hashes_differ == 'true'
         uses: actions/checkout@v4
@@ -236,13 +240,10 @@ jobs:
       - name: Copy MD file to ozone-site repository
         if: env.hashes_differ == 'true'
         run: |
-          TARGET_DIR=$(find ozone-site/docs -type d -name '*-administrator-guide' -exec find {} -type d -name '*-configuration' -print -quit \;)
-          echo "Target directory: $TARGET_DIR"
-          if [ -z "$TARGET_DIR" ]; then
-            echo "Target directory not found."
-            exit 1
-          fi
-          cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/configurations.md"
+#         Assuming 99 is always greater than the number of pages in the configuration section
+          TARGET_DIR=$(ls ozone-site/docs/*-administrator-guide/*-configuration)
+          echo "TARGET_DIR=${TARGET_DIR#ozone-site/} >> $GITHUB_ENV
+          cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/99-appendix.md"
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
         env:
@@ -251,8 +252,7 @@ jobs:
           cd ozone-site 
           git config --global user.name 'Github Actions'
           git config --global user.email 'noreply@github.com'
-          ADD_FILE=$(find docs -type d -name '*-administrator-guide' -exec find {} -type d -name '*-configuration' -print -quit \;)
-          git add "$ADD_FILE/configurations.md"
+          git add "$TARGET_DIR/99-appendix.md"
           git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
           git push origin HEAD:config-doc-update-from-$GITHUB_SHA
       - name: Create Pull Request in apache/ozone-site
@@ -261,7 +261,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd ozone-site
-          gh pr create --title "[Auto] Update configurations.md page" --body "This is an automated pull request from the ozone repository."
+          gh pr create --base HDDS-9225-website-v2 --head config-doc-update-from-$GITHUB_SHA \
+          --title "[Auto] Update configurations.md page" \
+          --body "This is an automated pull request triggered by the workflow {{ github.workflow }} run on {{ github.ref_name }}. Please delete the config-doc-update-from-$GITHUB_SHA branch after the PR is merged or closed."
   compile:
     needs:
       - build-info
