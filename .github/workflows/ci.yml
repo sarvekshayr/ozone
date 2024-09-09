@@ -252,7 +252,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKFLOW_NAME: ${{ github.workflow }}
           REF_NAME: ${{ github.ref_name }}
-          HEAD_REF_NAME: ${{ github.head_ref }
+          HEAD_REF_NAME: ${{ github.head_ref }}
         run: |
           cd ozone-site
           gh pr create --base HDDS-9225-website-v2 --head config-doc-update-from-$GITHUB_SHA \
