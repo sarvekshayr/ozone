@@ -232,7 +232,7 @@ jobs:
       - name: Copy MD file to ozone-site repository
         if: env.hashes_differ == 'true'
         run: |
-          TARGET_DIR=$(ls ozone-site/docs/*-administrator-guide/*-configuration)
+          TARGET_DIR=$(ls -d ozone-site/docs/*-administrator-guide/*-configuration)
           echo "TARGET_DIR=${TARGET_DIR#ozone-site/}" >> $GITHUB_ENV
           cp hadoop-hdds/docs/content/tools/Configurations.md "$TARGET_DIR/99-appendix.md"
       - name: Commit and push changes to apache/ozone-site
