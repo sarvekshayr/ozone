@@ -225,7 +225,6 @@ jobs:
         if: env.hashes_differ == 'true'
         uses: actions/checkout@v4
         with:
-          repository: sarvekshayr/ozone-site
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: 'HDDS-9225-website-v2'
           path: ozone-site
