@@ -203,6 +203,8 @@ jobs:
           fi
       - name: Commit and push changes to apache/ozone
         if: env.hashes_differ == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SYR_PAT }}
         run: |
           git config --global user.name 'Github Actions'
           git config --global user.email 'noreply@github.com'
@@ -213,7 +215,7 @@ jobs:
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYR_PAT }}
           WORKFLOW_NAME: ${{ github.workflow }}
           REF_NAME: ${{ github.ref_name }}
           HEAD_REF_NAME: ${{ github.head_ref }}
@@ -225,7 +227,7 @@ jobs:
         if: env.hashes_differ == 'true'
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SYR_PAT }}
           ref: 'HDDS-9225-website-v2'
           path: ozone-site
       - name: Copy MD file to ozone-site repository
@@ -237,7 +239,7 @@ jobs:
       - name: Commit and push changes to apache/ozone-site
         if: env.hashes_differ == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYR_PAT }}
         run: |
           cd ozone-site
           git config --global user.name 'Github Actions'
@@ -248,7 +250,7 @@ jobs:
       - name: Create Pull Request in apache/ozone-site
         if: env.hashes_differ == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYR_PAT }}
           WORKFLOW_NAME: ${{ github.workflow }}
           REF_NAME: ${{ github.ref_name }}
           HEAD_REF_NAME: ${{ github.head_ref }}
