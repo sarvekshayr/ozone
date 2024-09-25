@@ -58,7 +58,7 @@ def parse_xml_file(xml_content, properties):
         properties[name] = Property(
             name = name,
             value = prop.findtext('value', ''),
-            tag = '<br/>'.join(tag.split(', ')),
+            tag = '<br/>'.join(f'`{t}`' for t in tag.split(', ')),
             description = wrap_config_keys_in_description(
                 ' '.join(description.split()).strip(),
                 properties
@@ -70,7 +70,8 @@ def generate_markdown(properties):
     markdown = f"""
 ---
 sidebar_label: Appendix
----    
+---   
+ 
 # Configuration Key Appendix
 This page provides a comprehensive overview of all configuration keys available in Ozone.
 
