@@ -208,10 +208,11 @@ jobs:
         run: |
           git config --global user.name 'Github Actions'
           git config --global user.email 'noreply@github.com'
-          git checkout -b config-doc-update-from-$GITHUB_SHA
+          git checkout -b config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
           git add hadoop-hdds/docs/content/tools/Configurations.md
+          git rev-parse --short $GITHUB_SHA
           git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
-          git push origin HEAD:config-doc-update-from-$GITHUB_SHA
+          git push origin HEAD:config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
@@ -220,9 +221,19 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           HEAD_REF_NAME: ${{ github.head_ref }}
         run: |
-          gh pr create --base master --head config-doc-update-from-$GITHUB_SHA \
-          --title "[Auto] Update Configurations.md" \
-          --body "This is an automated pull request to update the website documentation of Ozone's default configuration. It was triggered by the workflow $WORKFLOW_NAME run on $REF_NAME. Please delete the $HEAD_REF_NAME branch from the repo when the PR is merged or closed."
+          JIRA_ID=$(git log -1 --pretty=%B | grep -o 'HDDS-[0-9]*')
+          echo "## What changes were proposed in this pull request?" > pr_body.txt
+          echo "This is an automated pull request triggered by the workflow $WORKFLOW_NAME run from [$BRANCH_NAME](https://github.com/apache/ozone/tree/$BRANCH_NAME). Please delete the [config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)](https://github.com/apache/ozone-site/tree/config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)) branch after this PR is merged or closed." >> pr_body.txt
+          echo "" >> pr_body.txt
+          echo "## What is the link to the Apache JIRA?" >> pr_body.txt
+          echo "[$JIRA_ID](https://issues.apache.org/jira/browse/$JIRA_ID)" >> pr_body.txt
+          echo "" >> pr_body.txt
+          echo "## How was this patch tested?" >> pr_body.txt
+          echo "Reviewers should manually verify the correctness of this change." >> pr_body.txt
+
+          gh pr create --base master --head config-doc-update-from-$(git rev-parse --short $GITHUB_SHA) \
+          --title "$JIRA_ID. Update Configurations.md page with changes from $JIRA_ID" \
+          --body-file pr_body.txt
       - name: Checkout ozone-site repository
         if: env.hashes_differ == 'true'
         uses: actions/checkout@v4
@@ -246,20 +257,30 @@ jobs:
           git config --global user.name 'Github Actions'
           git config --global user.email 'noreply@github.com'
           git add "$TARGET_DIR/99-appendix.md"
-          git commit -m "[Auto] Update configurations.md page from ozone $GITHUB_SHA"
-          git push origin HEAD:config-doc-update-from-$GITHUB_SHA
+          git commit -m "[Auto] Update configurations.md page from ozone $(git rev-parse --short $GITHUB_SHA)"
+          git push origin HEAD:config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
       - name: Create Pull Request in apache/ozone-site
         if: env.hashes_differ == 'true'
         env:
           GH_TOKEN: ${{ secrets.SYR_PAT }}
           WORKFLOW_NAME: ${{ github.workflow }}
-          REF_NAME: ${{ github.ref_name }}
-          HEAD_REF_NAME: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
         run: |
+          JIRA_ID=$(git log -1 --pretty=%B | grep -o 'HDDS-[0-9]*')
+          echo "## What changes were proposed in this pull request?" > pr_body.txt
+          echo "This is an automated pull request triggered by the workflow $WORKFLOW_NAME run from [$BRANCH_NAME](https://github.com/apache/ozone/tree/$BRANCH_NAME). Please delete the [config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)](https://github.com/apache/ozone-site/tree/config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)) branch after this PR is merged or closed." >> pr_body.txt
+          echo "" >> pr_body.txt
+          echo "## What is the link to the Apache JIRA?" >> pr_body.txt
+          echo "[$JIRA_ID](https://issues.apache.org/jira/browse/$JIRA_ID)" >> pr_body.txt
+          echo "" >> pr_body.txt
+          echo "## How was this patch tested?" >> pr_body.txt
+          echo "Reviewers should manually verify the correctness of this change." >> pr_body.txt
+          
           cd ozone-site
-          gh pr create --base HDDS-9225-website-v2 --head config-doc-update-from-$GITHUB_SHA \
-          --title "[Auto] Update configurations.md page" \
-          --body "This is an automated pull request triggered by the workflow $WORKFLOW_NAME run on $REF_NAME. Please delete the $HEAD_REF_NAME branch after the PR is merged or closed."
+          gh pr create --base HDDS-9225-website-v2 --head config-doc-update-from-$(git rev-parse --short $GITHUB_SHA) \
+          --title "$JIRA_ID. Update configurations.md page with changes from $JIRA_ID" \
+          --body-file pr_body.txt
   compile:
     needs:
       - build-info
