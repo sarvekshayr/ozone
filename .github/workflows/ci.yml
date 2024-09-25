@@ -210,6 +210,7 @@ jobs:
           git config --global user.email 'noreply@github.com'
           git checkout -b config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
           git add hadoop-hdds/docs/content/tools/Configurations.md
+          git rev-parse --short $GITHUB_SHA
           git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
           git push origin HEAD:config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
       - name: Create Pull Request in apache/ozone
