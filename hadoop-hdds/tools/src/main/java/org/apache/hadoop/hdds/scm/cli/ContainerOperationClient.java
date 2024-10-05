@@ -537,6 +537,11 @@ public class ContainerOperationClient implements ScmClient {
   }
 
   @Override
+  public boolean isScmRatisEnable() throws IOException {
+    return storageContainerLocationClient.getScmInfo().getScmRatisEnabled();
+  }
+
+  @Override
   public boolean rotateSecretKeys(boolean force) throws IOException {
     return secretKeyClient.checkAndRotate(force);
   }
