@@ -1002,6 +1002,7 @@ public final class StorageContainerLocationProtocolServerSideTranslatorPB
         .setClusterId(scmInfo.getClusterId())
         .setScmId(scmInfo.getScmId())
         .addAllPeerRoles(scmInfo.getRatisPeerRoles())
+        .setScmRatisEnabled(scmInfo.getScmRatisEnabled())
         .build();
   }
 
