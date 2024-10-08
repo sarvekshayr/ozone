@@ -216,13 +216,12 @@ jobs:
         if: env.hashes_differ == 'true'
         env:
           GH_TOKEN: ${{ secrets.SYR_PAT }}
-          WORKFLOW_NAME: ${{ github.workflow_ref }}
+          WORKFLOW_NAME: ${{ github.workflow }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           BRANCH_NAME: ${{ github.ref_name }}
-          SOURCE_BRANCH: ${{ github.head_ref }}
         run: |
           echo "## What changes were proposed in this pull request?" > pr_body.txt
-          echo "This is an automated pull request triggered by the [$WORKFLOW_NAME](https://github.com/sarvekshayr/ozone/actions/runs/$WORKFLOW_RUN_ID) workflow run from [$BRANCH_NAME](https://github.com/sarvekshayr/ozone/tree/$BRANCH_NAME). Please delete the [$SOURCE_BRANCH](https://github.com/sarvekshayr/ozone/tree/$SOURCE_BRANCH) branch after this PR is merged or closed." >> pr_body.txt
+          echo "This is an automated pull request triggered by the [$WORKFLOW_NAME](https://github.com/sarvekshayr/ozone/actions/runs/$WORKFLOW_RUN_ID) workflow run from [$BRANCH_NAME](https://github.com/sarvekshayr/ozone/tree/$BRANCH_NAME). Please delete the [config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)](https://github.com/apache/ozone-site/tree/config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)) branch after this PR is merged or closed." >> pr_body.txt
           echo "" >> pr_body.txt
           echo "## What is the link to the Apache JIRA?" >> pr_body.txt
           echo "https://issues.apache.org/jira/browse/" >> pr_body.txt
@@ -262,14 +261,14 @@ jobs:
         if: env.hashes_differ == 'true'
         env:
           GH_TOKEN: ${{ secrets.SYR_PAT }}
-          WORKFLOW_NAME: ${{ github.workflow_ref }}
+          WORKFLOW_NAME: ${{ github.workflow }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           BRANCH_NAME: ${{ github.ref_name }}
           SOURCE_BRANCH: ${{ github.head_ref }}
         run: |
           cd ozone-site
           echo "## What changes were proposed in this pull request?" > pr_body1.txt
-          echo "This is an automated pull request triggered by the [$WORKFLOW_NAME](https://github.com/sarvekshayr/ozone/actions/runs/$WORKFLOW_RUN_ID) workflow run from [$BRANCH_NAME](https://github.com/sarvekshayr/ozone-site/tree/$BRANCH_NAME). Please delete the [$SOURCE_BRANCH](https://github.com/sarvekshayr/ozone-site/tree/$SOURCE_BRANCH) branch after this PR is merged or closed." >> pr_body1.txt
+          echo "This is an automated pull request triggered by the [$WORKFLOW_NAME](https://github.com/sarvekshayr/ozone/actions/runs/$WORKFLOW_RUN_ID) workflow run from [$BRANCH_NAME](https://github.com/sarvekshayr/ozone-site/tree/$BRANCH_NAME). Please delete the [config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)](https://github.com/apache/ozone-site/tree/config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)) branch after this PR is merged or closed." >> pr_body1.txt
           echo "" >> pr_body1.txt
           echo "## What is the link to the Apache JIRA?" >> pr_body1.txt
           echo "https://issues.apache.org/jira/browse/" >> pr_body.txt
