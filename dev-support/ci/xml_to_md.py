@@ -67,15 +67,18 @@ def parse_xml_file(xml_content, properties):
 
 
 def generate_markdown(properties):
-    markdown = f"""
----
+    markdown = f"""---
+
 sidebar_label: Appendix
----   
- 
-# Configuration Key Appendix
+---
+
+Configuration Key Appendix
+==========================
+
 This page provides a comprehensive overview of all configuration keys available in Ozone.
 
-## Configuration Keys
+Configuration Keys
+------------------
 
 | **Name** | **Value** | **Tags** | **Description** |
 |-|-|-|-|
