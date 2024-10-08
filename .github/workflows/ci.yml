@@ -217,7 +217,7 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          JIRA_ID=$(git log origin/master..$(git rev-parse --abbrev-ref HEAD) --oneline | tail -1 | sed -E 's/.*(HDDS-[[:digit:]]+).*/\1/')
+          JIRA_ID=$(git log origin/master..origin/$(git rev-parse --abbrev-ref HEAD) --oneline | tail -1 | sed -E 's/.*(HDDS-[[:digit:]]+).*/\1/')
           echo "jira_id=$JIRA_ID" >> $GITHUB_ENV
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
