@@ -217,8 +217,9 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
+          echo "Branch name: $BRANCH_NAME"
           git fetch origin master:refs/remotes/origin/master
-          JIRA_ID=$(git log origin/master..origin/$(git rev-parse --abbrev-ref $BRANCH_NAME) --oneline | tail -1 | sed -E 's/.*(HDDS-[[:digit:]]+).*/\1/')
+          JIRA_ID=$(git log origin/master..origin/test-branch-2 --pretty=%B | grep -oE 'HDDS-[0-9]+' | tail -1)
           echo "Extracted JIRA ID: $JIRA_ID"
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
