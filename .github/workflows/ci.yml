@@ -217,11 +217,15 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          echo "Branch name: $BRANCH_NAME"
+          set -x
           git fetch origin master:refs/remotes/origin/master
-          JIRA_ID=$(git log origin/master..origin/test-branch-2 --pretty=%B | grep -oE 'HDDS-[0-9]+' | tail -1)
+          git show-ref
+          echo "Displaying all commit messages in the branch:"
+          git log origin/master..origin/${{ github.ref_name }} --pretty=oneline
+          echo "Extracting JIRA ID from the commit messages:"
+          JIRA_ID=$(git log origin/master..origin/${{ github.ref_name }} --pretty=%B | grep -oE 'HDDS-[0-9]+' | head -n 1)
           echo "Extracted JIRA ID: $JIRA_ID"
-
+          echo "JIRA_ID=$JIRA_ID" >> $GITHUB_ENV
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
@@ -229,7 +233,7 @@ jobs:
           WORKFLOW_NAME: ${{ github.workflow }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           BRANCH_NAME: ${{ github.ref_name }}
-          JIRA_ID: ${{ env.jira_id }}
+          JIRA_ID: ${{ env.JIRA_ID }}
         run: |
           echo "## What changes were proposed in this pull request?" > pr_body.txt
           echo "This is an automated pull request triggered by the [$WORKFLOW_NAME](https://github.com/sarvekshayr/ozone/actions/runs/$WORKFLOW_RUN_ID) workflow run from [$BRANCH_NAME](https://github.com/sarvekshayr/ozone/tree/$BRANCH_NAME). Please delete the [config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)](https://github.com/sarvekshayr/ozone/tree/config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)) branch after this PR is merged or closed." >> pr_body.txt
