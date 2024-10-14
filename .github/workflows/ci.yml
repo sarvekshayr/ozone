@@ -221,6 +221,7 @@ jobs:
           git fetch origin master:refs/remotes/origin/master
           JIRA_ID=$(git log origin/master..origin/test-branch-2 --pretty=%B | grep -oE 'HDDS-[0-9]+' | tail -1)
           echo "Extracted JIRA ID: $JIRA_ID"
+
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
