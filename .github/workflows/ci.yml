@@ -170,7 +170,7 @@ jobs:
     needs:
       - build
     if: ${{ github.repository == 'sarvekshayr/ozone' && github.event_name == 'push' && github.ref_name == 'test-branch-2' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
@@ -212,20 +212,15 @@ jobs:
           git add hadoop-hdds/docs/content/tools/Configurations.md
           git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
           git push origin HEAD:config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
-      - name: Extract JIRA ID from the first commit in the branch
+      - name: Extract JIRA ID from the first commit of the branch
         id: extract-jira
         env:
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          set -x
-          git fetch origin master:refs/remotes/origin/master
-          git show-ref
-          echo "Displaying all commit messages in the branch:"
-          git log origin/master..origin/${{ github.ref_name }} --pretty=oneline
-          echo "Extracting JIRA ID from the commit messages:"
-          JIRA_ID=$(git log origin/master..origin/${{ github.ref_name }} --pretty=%B | grep -oE 'HDDS-[0-9]+' | head -n 1)
-          echo "Extracted JIRA ID: $JIRA_ID"
-          echo "JIRA_ID=$JIRA_ID" >> $GITHUB_ENV
+          REMOTE=$(git remote -v | grep -E 'github.com[:/]apache/ozone' | awk '{print $1}' | head -1)
+          git fetch $REMOTE
+          JIRA_ID=$(git log ${REMOTE}/master..${REMOTE}/$(git rev-parse --abbrev-ref HEAD) --oneline | tail -1 | sed -E 's/.*(HDDS-[[:digit:]]+).*/\1/')
+          echo "jira_id=$JIRA_ID" >> $GITHUB_ENV
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
