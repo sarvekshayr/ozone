@@ -1770,6 +1770,14 @@
     </description>
   </property>
   <property>
+    <name>hdds.scm.http.auth.kerberos.principal1</name>
+    <value>HTTP/_HOST@REALM1</value>
+    <tag>SCM, SECURITY, KERBEROS1</tag>
+    <description>
+      SCM http server service principal if SPNEGO is enabled for SCM http server1.
+    </description>
+  </property>
+  <property>
     <name>hdds.scm.http.auth.kerberos.keytab</name>
     <value>/etc/security/keytabs/HTTP.keytab</value>
     <tag>SCM, SECURITY, KERBEROS</tag>
