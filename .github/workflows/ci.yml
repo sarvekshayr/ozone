@@ -166,7 +166,6 @@ jobs:
           path: |
             ~/.m2/repository/org/apache/ozone
           retention-days: 1
-
   build-config-doc:
     needs:
       - build
@@ -196,7 +195,7 @@ jobs:
           HASH_FILES="${{ hashFiles('hadoop-hdds/docs/content/tools/Configurations.md') }}"
           PREV_HASH="${{ hashFiles('hadoop-hdds/docs/content/tools/Configurations.md@{previous-commit}') }}"
           if [ "$HASH_FILES" != "$PREV_HASH" ]; then
-            echo "Configurations.md has changed, proceeding to commit and create PRs."
+            echo "Configurations.md has changed, proceeding to commit and create a PR."
             echo "hashes_differ=true" >> $GITHUB_ENV
           else
             echo "Configurations.md is unchanged, skipping commit and PR creation."
@@ -213,14 +212,16 @@ jobs:
           git add hadoop-hdds/docs/content/tools/Configurations.md
           git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
           git push origin HEAD:config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
-      - name: Extract JIRA ID from the first commit of the branch
+      - name: Extract JIRA ID from the PR title
         id: extract-jira
         env:
-          BRANCH_NAME: ${{ github.ref_name }}
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
-          REMOTE=$(git remote -v | grep -E 'github.com[:/]apache/ozone' | awk '{print $1}' | head -1)
-          git fetch $REMOTE
-          JIRA_ID=$(git log ${REMOTE}/master..${REMOTE}/$(git rev-parse --abbrev-ref HEAD) --oneline | tail -1 | sed -E 's/.*(HDDS-[[:digit:]]+).*/\1/')
+          JIRA_ID=$(echo "$TITLE" | grep -oE '^HDDS-[1-9][0-9]{0,4}')
+          if [ -z "$JIRA_ID" ]; then
+            echo "Error: No JIRA ID found in the PR title"
+            exit 1
+          fi
           echo "jira_id=$JIRA_ID" >> $GITHUB_ENV
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
