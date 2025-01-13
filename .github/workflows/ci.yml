@@ -204,17 +204,6 @@ jobs:
             echo "Configurations.md is unchanged, skipping commit and PR creation."
             echo "hashes_differ=false" >> $GITHUB_ENV
           fi
-      - name: Commit and push changes to apache/ozone
-        if: env.hashes_differ == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.SYR_PAT }}
-        run: |
-          git config --global user.name 'Github Actions'
-          git config --global user.email 'noreply@github.com'
-          git checkout -b config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
-          git add hadoop-hdds/docs/content/tools/Configurations.md
-          git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
-          git push origin HEAD:config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
       - name: Extract JIRA ID from the PR title
         id: extract-jira
         env:
@@ -226,6 +215,17 @@ jobs:
             exit 1
           fi
           echo "jira_id=$JIRA_ID" >> $GITHUB_ENV
+      - name: Commit and push changes to apache/ozone
+        if: env.hashes_differ == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SYR_PAT }}
+        run: |
+          git config --global user.name 'Github Actions'
+          git config --global user.email 'noreply@github.com'
+          git checkout -b config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
+          git add hadoop-hdds/docs/content/tools/Configurations.md
+          git commit -m "[Auto] Update Configurations.md from $GITHUB_SHA"
+          git push origin HEAD:config-doc-update-from-$(git rev-parse --short $GITHUB_SHA)
       - name: Create Pull Request in apache/ozone
         if: env.hashes_differ == 'true'
         env:
