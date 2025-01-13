@@ -206,6 +206,7 @@ jobs:
           fi
       - name: Extract JIRA ID from the PR title
         id: extract-jira
+        if: ${{ env.hashes_differ == 'true' }}
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
