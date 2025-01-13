@@ -195,7 +195,7 @@ jobs:
       - name: Extract the source tarball
         run: |
           mkdir -p ozone-bin/extracted
-          tar -xzf ozone-bin3/ozone-*.tar.gz -C ozone-bin/extracted
+          tar -xzf ozone-bin/ozone-*.tar.gz -C ozone-bin/extracted
       - name: Run the Python script to convert XML properties into Markdown
         run: python3 dev-support/ci/xml_to_md.py ozone-bin/extracted > hadoop-hdds/docs/content/tools/Configurations.md
       - name: Check if Configurations.md file has changed
