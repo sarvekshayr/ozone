@@ -14,6 +14,12 @@
 # limitations under the License.
 name: full-ci
 on:
+  pull_request:
+    types:
+      - reopened
+      - opened
+      - edited
+      - synchronize
   workflow_call:
     inputs:
       ratis_args:
@@ -172,7 +178,7 @@ jobs:
   build-config-doc:
     needs:
       - build
-    if: ${{ github.repository == 'sarvekshayr/ozone' && github.event_name == 'push' && github.ref_name == 'test-branch-ci' }}
+    if: ${{ github.repository == 'sarvekshayr/ozone' && (github.event_name == 'push' || github.event_name == 'pull_request') && github.ref_name == 'test-branch-ci' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project
@@ -189,7 +195,7 @@ jobs:
       - name: Extract the source tarball
         run: |
           mkdir -p ozone-bin/extracted
-          tar -xzf ozone-bin/ozone-*.tar.gz -C ozone-bin/extracted
+          tar -xzf ozone-bin3/ozone-*.tar.gz -C ozone-bin/extracted
       - name: Run the Python script to convert XML properties into Markdown
         run: python3 dev-support/ci/xml_to_md.py ozone-bin/extracted > hadoop-hdds/docs/content/tools/Configurations.md
       - name: Check if Configurations.md file has changed
