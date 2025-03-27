@@ -39,3 +39,8 @@ Test ozone debug checksums with one datanode DEAD
     FOR    ${replica}    IN RANGE    2
         Verify Healthy Replica   ${json}    ${replica}    ${md5sum}
     END
+
+Test ozone debug replicas verify metadata when missing replicas
+    ${json} =                           Execute replicas verify metadata CLI tool
+    Should Be Equal   ${json}[status]   MISSING_REPLICAS
+    Should Be False   ${json}[pass]
