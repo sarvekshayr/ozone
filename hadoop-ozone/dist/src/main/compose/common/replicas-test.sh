@@ -51,5 +51,5 @@ start_docker_env 9
 execute_robot_test ${SCM} -v "PREFIX:${prefix}" debug/ozone-debug-tests-ec3-2.robot
 execute_robot_test ${SCM} -v "PREFIX:${prefix}" debug/ozone-debug-tests-ec6-3.robot
 
-stop_containers ozone-datanode-1.ozone_default ozone-datanode-2.ozone_default ozone-datanode-3.ozone_default
+stop_containers ozone-datanode-1 ozone-datanode-2 ozone-datanode-3
 execute_robot_test ${SCM} -v "PREFIX:${prefix}" debug/ozone-debug-metadata-missing-replicas.robot
