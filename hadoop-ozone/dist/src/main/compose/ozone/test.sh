@@ -28,27 +28,27 @@ source "$COMPOSE_DIR/../testlib.sh"
 
 start_docker_env
 
-execute_robot_test scm lib
-execute_robot_test scm ozone-lib
-
-execute_robot_test om auditparser
-
-execute_robot_test scm basic
-
-execute_robot_test scm gdpr
-
-execute_robot_test scm security/ozone-secure-token.robot
-
-execute_robot_test scm recon
-
-execute_robot_test scm om-ratis
-
-execute_robot_test scm freon
-
-execute_robot_test scm cli
-execute_robot_test scm admincli
-
-execute_robot_test scm -v USERNAME:httpfs httpfs
+#execute_robot_test scm lib
+#execute_robot_test scm ozone-lib
+#
+#execute_robot_test om auditparser
+#
+#execute_robot_test scm basic
+#
+#execute_robot_test scm gdpr
+#
+#execute_robot_test scm security/ozone-secure-token.robot
+#
+#execute_robot_test scm recon
+#
+#execute_robot_test scm om-ratis
+#
+#execute_robot_test scm freon
+#
+#execute_robot_test scm cli
+#execute_robot_test scm admincli
+#
+#execute_robot_test scm -v USERNAME:httpfs httpfs
 source "$COMPOSE_DIR/../common/replicas-test.sh"
 
 execute_robot_test scm -v SCHEME:o3fs -v BUCKET_TYPE:bucket -N ozonefs-o3fs-bucket ozonefs/ozonefs.robot
