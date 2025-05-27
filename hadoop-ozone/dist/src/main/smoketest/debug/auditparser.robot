@@ -25,11 +25,11 @@ Test Timeout        5 minutes
 ${user}              hadoop
 ${buckets}           5
 ${auditworkdir}      /tmp
+${OM}                om1
 
 *** Keywords ***
 Set username
-    ${hostname} =          Execute         hostname
-    Set Suite Variable     ${user}         testuser/${hostname}@EXAMPLE.COM
+    Set Suite Variable     ${user}         testuser/${OM}@EXAMPLE.COM
     [return]               ${user}
 
 Create data
