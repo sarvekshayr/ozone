@@ -17,8 +17,8 @@
 Documentation       Smoketest ozone cluster startup
 Library             OperatingSystem
 Library             BuiltIn
-Resource            ../commonlib.robot
-Resource            ../ozone-lib/freon.robot
+Resource            ../../commonlib.robot
+Resource            ../../ozone-lib/freon.robot
 Test Timeout        5 minutes
 
 *** Variables ***
