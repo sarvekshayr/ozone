@@ -26,8 +26,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.hadoop.conf.ReconfigurationException;
-import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.conf.ReconfigurableBase;
 import org.apache.hadoop.hdds.conf.ReconfigurationHandler;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
@@ -54,7 +54,6 @@ import org.junit.jupiter.api.TestInstance;
 public abstract class TestReconfigShell implements NonHATests.TestCase {
 
   private OzoneAdmin ozoneAdmin;
-  private OzoneConfiguration conf;
   private ReconfigurationHandler reconfigurationHandler;
   private GenericTestUtils.PrintStreamCapturer out;
   private GenericTestUtils.PrintStreamCapturer err;
@@ -64,7 +63,6 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
     out = GenericTestUtils.captureOut();
     err = GenericTestUtils.captureErr();
     ozoneAdmin = new OzoneAdmin();
-    conf = new OzoneConfiguration();
     reconfigurationHandler = cluster().getOzoneManager().getReconfigurationHandler();
   }
 
@@ -89,7 +87,8 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
   }
 
   @Test
-  void testDirectoryDeletingServiceIntervalReconfiguration() throws ReconfigurationException {
+  void testDirectoryDeletingServiceIntervalReconfiguration() throws ReconfigurationException,
+      InterruptedException, TimeoutException {
     OzoneManager om = cluster().getOzoneManager();
     InetSocketAddress socket = om.getOmRpcServerAddr();
     LogCapturer logCapturer = LogCapturer.captureLogs(DirectoryDeletingService.class);
@@ -103,18 +102,16 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
 
     //Start the reconfiguration task
     executeAndAssertStart("OM", socket);
-    //If config value is set in ozone-site.xml then it is picked up during reconfiguration
-    assertThat(conf.get(OZONE_DIR_DELETING_SERVICE_INTERVAL)).isEqualTo(intervalFromXML);
+    GenericTestUtils.waitFor(() -> logCapturer.getOutput().contains(
+        String.format("Updating and restarting DirectoryDeletingService with interval %d %s",
+            intervalFromXMLInSeconds, TimeUnit.SECONDS.name().toLowerCase())),
+        100, 5000
+    );
+    assertThat(reconfigurationHandler.getConf().get(OZONE_DIR_DELETING_SERVICE_INTERVAL)).isEqualTo(intervalFromXML);
 
     executeAndAssertStatus("OM", socket);
-    assertThat(reconfigurationHandler.getConf().get(OZONE_DIR_DELETING_SERVICE_INTERVAL)).isEqualTo(intervalFromXML);
     assertThat(out.get()).contains(
-        String.format("SUCCESS: Changed property %s", OZONE_DIR_DELETING_SERVICE_INTERVAL)
-    );
-    assertThat(logCapturer.getOutput()).contains(
-        String.format("Updating and restarting DirectoryDeletingService with interval %d %s",
-            intervalFromXMLInSeconds, TimeUnit.SECONDS.name().toLowerCase())
-    );
+        String.format("SUCCESS: Changed property %s", OZONE_DIR_DELETING_SERVICE_INTERVAL));
   }
 
   @Test
