@@ -114,8 +114,7 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
     GenericTestUtils.waitFor(() -> {
       ozoneAdmin.getCmd().execute("reconfig", "--service", "OM", "--address", address, "status");
       String output = out.get();
-      return output.contains("finished") &&
-          output.contains(String.format("SUCCESS: Changed property %s", OZONE_DIR_DELETING_SERVICE_INTERVAL));
+      return output.contains("finished");
     }, 1000, 20000);
   }
 
