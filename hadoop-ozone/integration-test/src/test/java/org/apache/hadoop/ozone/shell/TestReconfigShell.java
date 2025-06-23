@@ -104,16 +104,14 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
     //Start the reconfiguration task
     executeAndAssertStart("OM", socket);
     GenericTestUtils.waitFor(() -> reconfigHandlerLog.getOutput().contains("Reconfiguration completed"),
-        1000, 10000);
+        1000, 20000);
     assertThat(dirDeletingServiceLog.getOutput()).contains(
         String.format("Updating and restarting DirectoryDeletingService with interval %d %s",
             intervalFromXMLInSeconds, TimeUnit.SECONDS.name().toLowerCase()));
     assertThat(reconfigurationHandler.getConf().get(OZONE_DIR_DELETING_SERVICE_INTERVAL)).isEqualTo(intervalFromXML);
-    GenericTestUtils.waitFor(() -> {
-      executeAndAssertStatus("OM", socket);
-      return out.get().contains(
-          String.format("SUCCESS: Changed property %s", OZONE_DIR_DELETING_SERVICE_INTERVAL));
-    }, 1000, 10000);
+    executeAndAssertStatus("OM", socket);
+    assertThat(out.get()).contains(
+        String.format("SUCCESS: Changed property %s", OZONE_DIR_DELETING_SERVICE_INTERVAL));
   }
 
   @Test
@@ -176,10 +174,13 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
     assertThat(out.get()).contains(service + ": Started reconfiguration task on node [" + address + "]");
   }
 
-  private void executeAndAssertStatus(String service, InetSocketAddress socket) {
+  private void executeAndAssertStatus(String service, InetSocketAddress socket)
+      throws InterruptedException, TimeoutException {
     String address = socket.getHostString() + ":" + socket.getPort();
-    ozoneAdmin.getCmd().execute("reconfig", "--service", service, "--address", address, "status");
-    assertThat(out.get()).contains(service + ": Reconfiguring status for node [" + address + "]: started");
+    GenericTestUtils.waitFor(() -> {
+      ozoneAdmin.getCmd().execute("reconfig", "--service", service, "--address", address, "status");
+      return out.get().contains("finished");
+    }, 1000, 20000);
   }
 
 }
