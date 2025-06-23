@@ -91,7 +91,8 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
       InterruptedException, TimeoutException {
     OzoneManager om = cluster().getOzoneManager();
     InetSocketAddress socket = om.getOmRpcServerAddr();
-    LogCapturer logCapturer = LogCapturer.captureLogs(DirectoryDeletingService.class);
+    LogCapturer dirDeletingServiceLog = LogCapturer.captureLogs(DirectoryDeletingService.class);
+    LogCapturer reconfigHandlerLog = LogCapturer.captureLogs(ReconfigurationHandler.class);
 
     String initialInterval = "1m";
     String intervalFromXML = "2m"; //config value set in ozone-site.xml
@@ -102,11 +103,11 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
 
     //Start the reconfiguration task
     executeAndAssertStart("OM", socket);
-    GenericTestUtils.waitFor(() -> logCapturer.getOutput().contains(
+    GenericTestUtils.waitFor(() -> reconfigHandlerLog.getOutput().contains("Reconfiguration completed"),
+        1000, 10000);
+    assertThat(dirDeletingServiceLog.getOutput()).contains(
         String.format("Updating and restarting DirectoryDeletingService with interval %d %s",
-            intervalFromXMLInSeconds, TimeUnit.SECONDS.name().toLowerCase())),
-        100, 5000
-    );
+            intervalFromXMLInSeconds, TimeUnit.SECONDS.name().toLowerCase()));
     assertThat(reconfigurationHandler.getConf().get(OZONE_DIR_DELETING_SERVICE_INTERVAL)).isEqualTo(intervalFromXML);
 
     executeAndAssertStatus("OM", socket);
