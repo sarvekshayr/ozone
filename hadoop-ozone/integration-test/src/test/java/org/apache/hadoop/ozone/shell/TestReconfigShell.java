@@ -109,10 +109,11 @@ public abstract class TestReconfigShell implements NonHATests.TestCase {
         String.format("Updating and restarting DirectoryDeletingService with interval %d %s",
             intervalFromXMLInSeconds, TimeUnit.SECONDS.name().toLowerCase()));
     assertThat(reconfigurationHandler.getConf().get(OZONE_DIR_DELETING_SERVICE_INTERVAL)).isEqualTo(intervalFromXML);
-
-    executeAndAssertStatus("OM", socket);
-    assertThat(out.get()).contains(
-        String.format("SUCCESS: Changed property %s", OZONE_DIR_DELETING_SERVICE_INTERVAL));
+    GenericTestUtils.waitFor(() -> {
+      executeAndAssertStatus("OM", socket);
+      return out.get().contains(
+          String.format("SUCCESS: Changed property %s", OZONE_DIR_DELETING_SERVICE_INTERVAL));
+    }, 1000, 10000);
   }
 
   @Test
