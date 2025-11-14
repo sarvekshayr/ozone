@@ -74,7 +74,10 @@ If they don't match, it describes how to make the updates to include the changes
 - integration
 
 ### close-stale-prs Workflow
-[This](./workflows/close-stale-prs.yml) workflow is scheduled each night at midnight and uses the [actions/stale](https://github.com/actions/stale) to automatically manage inactive PRs. It marks PRs as stale after 21 days of inactivity and closes them 7 days later. If a stale PR receives any updates or comments, the stale label is automatically removed.
+[This](./workflows/close-stale-prs.yaml) workflow is scheduled each night at midnight and uses the [actions/stale](https://github.com/actions/stale) to automatically manage inactive PRs. It marks PRs as stale after 21 days of inactivity and closes them 7 days later (28 days total). The workflow exempts draft PRs and PRs labeled as `blocked`, `in-progress`, or `on-hold`. If a stale PR receives any updates or comments, the stale label is automatically removed.
+
+### remove-stale-label Workflow
+[This](./workflows/remove-stale-label.yml) workflow automatically removes the `stale` label when a PR is closed or reopened, ensuring labels stay clean and accurate.
 
 ### comment-commands Workflow
 [This](./workflows/comments.yaml) workflow is triggered each time a comment is added/edited to a PR.  It checks to see if the body of the comment begins with one of the following strings and, if so, invokes the corresponding command.
