@@ -17,8 +17,6 @@ name: remove-stale-label
 on:
   pull_request:
     types: [closed, reopened]
-  workflow_dispatch:
-
 
 jobs:
   remove-stale:
