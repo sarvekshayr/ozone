@@ -18,6 +18,7 @@ on:
   pull_request:
     types: [closed, reopened]
 
+
 jobs:
   remove-stale:
     runs-on: ubuntu-latest
