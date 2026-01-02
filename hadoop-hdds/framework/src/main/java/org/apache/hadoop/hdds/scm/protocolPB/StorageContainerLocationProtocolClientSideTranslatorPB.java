@@ -1049,12 +1049,23 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
 
     ContainerBalancerStatusInfoRequestProto request =
             ContainerBalancerStatusInfoRequestProto.getDefaultInstance();
-    ContainerBalancerStatusInfoResponseProto response =
-            submitRequest(Type.GetContainerBalancerStatusInfo,
-                    builder -> builder.setContainerBalancerStatusInfoRequest(request))
-                    .getContainerBalancerStatusInfoResponse();
-    return response;
-
+    try {
+      ContainerBalancerStatusInfoResponseProto response =
+              submitRequest(Type.GetContainerBalancerStatusInfo,
+                      builder -> builder.setContainerBalancerStatusInfoRequest(request))
+                      .getContainerBalancerStatusInfoResponse();
+      return response;
+    } catch (IOException e) {
+      // Fallback for older servers (1.4 and below) that don't have this API
+      // Check if it's a protobuf parsing error indicating missing enum value
+      if (e.getMessage() != null && e.getMessage().contains("missing required fields")) {
+        boolean isRunning = getContainerBalancerStatus();
+        return ContainerBalancerStatusInfoResponseProto.newBuilder()
+            .setIsRunning(isRunning)
+            .build();
+      }
+      throw e;
+    }
   }
 
   /**

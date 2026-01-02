@@ -38,6 +38,60 @@ Buckets Can Be Listed
         Should Contain    ${result}    ecbucket-${CLUSTER_VERSION}
     END
 
+Execute Container Balancer Status Command
+    ${result} =     Execute     ozone admin containerbalancer status
+    Should Contain    ${result}    ContainerBalancer
+    
+    # Test HDDS-11120 compatibility: 
+    # - Versions 2.0+ have GetContainerBalancerStatusInfo API with rich status info
+    # - Versions 1.4 and below only have GetContainerBalancerStatus API
+    # - A newer client (2.0+) should be able to connect to older server (1.4-) 
+    #   and gracefully fallback to the old API
+    
+    # When both client and server are 2.0+, verbose mode should work
+    IF    '${CLIENT_VERSION}' >= '${BALANCER_INFO_VERSION}' and '${CLUSTER_VERSION}' >= '${BALANCER_INFO_VERSION}'
+        ${verbose_result} =     Execute     ozone admin containerbalancer status -v
+        # Rich status information should be available
+        Should Contain Any    ${verbose_result}    Container Balancer Configuration    Started at    Balancing duration
+    END
+    
+    # When client is 2.0+ but server is older, it should still work but without detailed info
+    IF    '${CLIENT_VERSION}' >= '${BALANCER_INFO_VERSION}' and '${CLUSTER_VERSION}' < '${BALANCER_INFO_VERSION}'
+        # Command should not fail even with verbose flag
+        ${verbose_result} =     Execute     ozone admin containerbalancer status -v
+        Should Contain    ${verbose_result}    ContainerBalancer
+        # Should indicate that detailed info is not available from older server
+        # Should Contain Any    ${verbose_result}    not available    Not Running
+    END
+
+
+Execute Container Balancer Status Command
+    ${result} =     Execute     ozone admin containerbalancer status
+    Should Contain    ${result}    ContainerBalancer
+    
+    # Test HDDS-11120 compatibility: 
+    # - Versions 2.0+ have GetContainerBalancerStatusInfo API with rich status info
+    # - Versions 1.4 and below only have GetContainerBalancerStatus API
+    # - A newer client (2.0+) should be able to connect to older server (1.4-) 
+    #   and gracefully fallback to the old API
+    
+    # When both client and server are 2.0+, verbose mode should work
+    IF    '${CLIENT_VERSION}' >= '${BALANCER_INFO_VERSION}' and '${CLUSTER_VERSION}' >= '${BALANCER_INFO_VERSION}'
+        ${verbose_result} =     Execute     ozone admin containerbalancer status -v
+        # Rich status information should be available
+        Should Contain Any    ${verbose_result}    Container Balancer Configuration    Started at    Balancing duration
+    END
+    
+    # When client is 2.0+ but server is older, it should still work but without detailed info
+    IF    '${CLIENT_VERSION}' >= '${BALANCER_INFO_VERSION}' and '${CLUSTER_VERSION}' < '${BALANCER_INFO_VERSION}'
+        # Command should not fail even with verbose flag
+        ${verbose_result} =     Execute     ozone admin containerbalancer status -v
+        Should Contain    ${verbose_result}    ContainerBalancer
+        # Should indicate that detailed info is not available from older server
+        Should Contain Any    ${verbose_result}    not available    Not Running
+    END
+
+
 Bucket Without Replication Config
     Verify Bucket Empty Replication Config    /vol1/bucket1
 

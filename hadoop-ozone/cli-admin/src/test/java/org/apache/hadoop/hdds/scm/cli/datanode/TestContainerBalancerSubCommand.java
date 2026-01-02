@@ -475,4 +475,64 @@ class TestContainerBalancerSubCommand {
     assertThat(err.get()).containsPattern(FAILED_TO_START);
   }
 
+  @Test
+  void testContainerBalancerStatusSubcommandBackwardCompatibility()
+      throws IOException {
+    // Test backward compatibility: when getContainerBalancerStatusInfo() fails (e.g., 7.1.9 server),
+    // the command should fall back to getContainerBalancerStatus()
+    ScmClient scmClient = mock(ScmClient.class);
+
+    // Simulate the newer API not being available (throws exception like when connecting to 7.1.9 server)
+    when(scmClient.getContainerBalancerStatusInfo())
+        .thenThrow(new IOException("InvalidProtocolBufferException: Message missing required fields: cmdType"));
+
+    // The old API should return true
+    when(scmClient.getContainerBalancerStatus()).thenReturn(true);
+
+    statusCmd.execute(scmClient);
+
+    // Should show running status even though detailed info is not available
+    assertThat(out.get()).containsPattern(IS_RUNNING);
+  }
+
+  @Test
+  void testContainerBalancerStatusSubcommandBackwardCompatibilityNotRunning()
+      throws IOException {
+    // Test backward compatibility when balancer is not running
+    ScmClient scmClient = mock(ScmClient.class);
+
+    // Simulate the newer API not being available
+    when(scmClient.getContainerBalancerStatusInfo())
+        .thenThrow(new IOException("InvalidProtocolBufferException: Message missing required fields: cmdType"));
+
+    // The old API should return false
+    when(scmClient.getContainerBalancerStatus()).thenReturn(false);
+
+    statusCmd.execute(scmClient);
+
+    assertThat(out.get()).containsPattern(IS_NOT_RUNNING);
+  }
+
+  @Test
+  void testContainerBalancerStatusSubcommandBackwardCompatibilityVerbose()
+      throws IOException {
+    // Test that verbose mode shows helpful message when detailed info is not available
+    ScmClient scmClient = mock(ScmClient.class);
+
+    // Simulate the newer API not being available
+    when(scmClient.getContainerBalancerStatusInfo())
+        .thenThrow(new IOException("InvalidProtocolBufferException: Message missing required fields: cmdType"));
+
+    // The old API should return true
+    when(scmClient.getContainerBalancerStatus()).thenReturn(true);
+
+    verbose.set(true);
+    statusCmd.execute(scmClient);
+
+    // Should show running status and a message about limited info
+    assertThat(out.get())
+        .containsPattern(IS_RUNNING)
+        .contains("(Detailed status information not available from this server version)");
+  }
+
 }
