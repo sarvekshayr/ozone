@@ -22,5 +22,6 @@ Resource            ../ozone-lib/shell.robot
 ${EC_VERSION}     1.3.0
 ${FSO_VERSION}    1.3.0
 ${HSYNC_VERSION}  2.0.0
+${CONTAINERBALANCER_VERSION}    1.2.0
 ${BALANCER_INFO_VERSION}    2.0.0
 ${TESTFILE}       ${TEST_DATA_DIR}/small
