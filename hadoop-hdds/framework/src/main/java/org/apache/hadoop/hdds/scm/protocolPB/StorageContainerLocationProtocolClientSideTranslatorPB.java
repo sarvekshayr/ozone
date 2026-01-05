@@ -1056,8 +1056,9 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
                       .getContainerBalancerStatusInfoResponse();
       return response;
     } catch (IOException e) {
-      // Fallback for older servers (1.4 and below) that don't have this API
-      // Check if it's a protobuf parsing error indicating missing enum value
+      // HDDS-11120 - Added a rich rebalancing status info
+      // Backward compatibility fix - newer clients (2.0 >=) gracefully fallback to the old
+      // API when connecting to older servers (< 2.0) that don't support the new enum value.
       if (e.getMessage() != null && e.getMessage().contains("missing required fields")) {
         boolean isRunning = getContainerBalancerStatus();
         return ContainerBalancerStatusInfoResponseProto.newBuilder()

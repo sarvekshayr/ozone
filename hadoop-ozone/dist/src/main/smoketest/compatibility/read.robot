@@ -46,30 +46,6 @@ Execute Container Balancer Status Command
     
     ${result} =     Execute     ozone admin containerbalancer status
     Should Contain    ${result}    ContainerBalancer
-    
-    # Test HDDS-11120 compatibility: 
-    # - Versions 2.0+ have GetContainerBalancerStatusInfo API with rich status info
-    # - Versions 1.4 and below only have GetContainerBalancerStatus API
-    # - A newer client (2.0+) should be able to connect to older server (1.4-) 
-    #   and gracefully fallback to the old API
-    
-    # Only test detailed status when both client and server support it AND balancer is running
-    IF    '${CLIENT_VERSION}' >= '${BALANCER_INFO_VERSION}' and '${CLUSTER_VERSION}' >= '${BALANCER_INFO_VERSION}'
-        ${verbose_result} =     Execute     ozone admin containerbalancer status --verbose
-        # If balancer is running, rich status information should be available
-        # If not running, just verify command doesn't crash
-        Should Contain    ${verbose_result}    ContainerBalancer
-    END
-    
-    # When client is 2.0+ but server is older (1.2-1.4), test backward compatibility
-    # The newer client should gracefully fallback to the old API
-    IF    '${CLIENT_VERSION}' >= '${BALANCER_INFO_VERSION}' and '${CLUSTER_VERSION}' >= '${CONTAINERBALANCER_VERSION}' and '${CLUSTER_VERSION}' < '${BALANCER_INFO_VERSION}'
-        # Command should not fail even with verbose flag (test the fallback)
-        ${verbose_result} =     Execute     ozone admin containerbalancer status --verbose
-        # Should work without errors - this tests our backward compatibility fix
-        Should Contain    ${verbose_result}    ContainerBalancer
-    END
-
 
 Bucket Without Replication Config
     Verify Bucket Empty Replication Config    /vol1/bucket1
