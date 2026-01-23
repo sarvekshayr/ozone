@@ -127,7 +127,7 @@ jobs:
   generate-config-doc:
     needs:
       - build-info
-      - build
+      # - build
     # Allow running for any branch in forks for testing, but only master in apache/ozone
     if: |
       needs.build-info.outputs.needs-build == 'true' &&

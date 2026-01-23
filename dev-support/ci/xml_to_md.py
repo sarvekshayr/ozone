@@ -55,11 +55,19 @@ def parse_xml_file(xml_content, properties):
     description = prop.findtext('description', '')
     if not description:
       raise ValueError(f"Property '{name}' is missing a description.")
-    tag = prop.findtext('tag')
+    tag = prop.findtext('tag', '')
+    
+    # Format tags: split by comma and wrap in backticks
+    # Some properties may not have tags, so handle empty/None case
+    if tag:
+      formatted_tag = '<br/>'.join(f'`{t.strip()}`' for t in tag.split(','))
+    else:
+      formatted_tag = ''
+    
     properties[name] = Property(
       name = name,
       value = prop.findtext('value', ''),
-      tag = '<br/>'.join(f'`{t}`' for t in tag.split(', ')),
+      tag = formatted_tag,
       description = wrap_config_keys_in_description(
         ' '.join(description.split()).strip(),
         properties
