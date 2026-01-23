@@ -182,7 +182,11 @@ jobs:
             # Get all commits in current branch that are not in master (oldest to newest)
             # This is simpler than merge-base approach!
             JIRA_ID=""
-            while IFS= read -r commit_sha commit_msg; do
+            while IFS= read -r line; do
+              # Split line into SHA and message (first space only)
+              commit_sha="${line%% *}"
+              commit_msg="${line#* }"
+              
               echo "Checking: $commit_msg"
               
               # Skip automated commits
