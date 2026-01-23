@@ -131,7 +131,7 @@ def main():
     raise ValueError("Snapshot directory not found in the specified base path.")
 
   extract_path = os.path.join(snapshot_dir, 'share', 'ozone', 'lib')
-  xml_filename = 'ozone-default-generated.xml'
+  xml_filename = 'ozone-default.xml'
 
   property_map = {}
   for file_name in os.listdir(extract_path):

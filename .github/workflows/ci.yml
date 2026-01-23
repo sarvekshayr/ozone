@@ -150,7 +150,9 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.build-info.outputs.sha }}
+          # In apache/ozone master: use the pushed commit
+          # In forks: use master as base to avoid including feature branch commits
+          ref: ${{ github.repository == 'apache/ozone' && github.ref_name == 'master' && needs.build-info.outputs.sha || 'master' }}
           # Need token to push changes
           token: ${{ secrets.GITHUB_TOKEN }}
       
@@ -205,26 +207,42 @@ jobs:
           # Use single branch name for all automated updates
           BRANCH_NAME="automated-config-doc-update"
           
-          # Check if branch exists remotely
-          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
-            echo "Branch $BRANCH_NAME exists, checking out"
-            git fetch origin "$BRANCH_NAME"
-            git checkout "$BRANCH_NAME"
-            git merge --ff-only origin/master || {
-              echo "Cannot fast-forward, rebasing"
-              git rebase origin/master
-            }
-          else
-            echo "Creating new branch $BRANCH_NAME"
-            git checkout -b "$BRANCH_NAME"
-          fi
+          echo "Current branch: $(git branch --show-current)"
+          echo "Current commit: $(git rev-parse HEAD)"
+          
+          # Create/reset branch at current commit
+          git checkout -B "$BRANCH_NAME"
+          echo "Created/reset branch $BRANCH_NAME at current commit"
           
           git add hadoop-hdds/docs/content/tools/Configurations.md
-          git commit -m "[Auto] Update configuration documentation from ${{ github.sha }}"
+          
+          # Commit message references the original commit that triggered this
+          COMMIT_MSG="[Auto] Update configuration documentation"
+          if [ "${{ github.repository }}" = "apache/ozone" ] && [ "${{ github.ref_name }}" = "master" ]; then
+            COMMIT_MSG="$COMMIT_MSG from ${{ github.sha }}"
+          else
+            COMMIT_MSG="$COMMIT_MSG (test run from ${{ github.ref_name }})"
+          fi
+          
+          git commit -m "$COMMIT_MSG"
+          
+          echo "Pushing $BRANCH_NAME to origin"
           git push -f origin "$BRANCH_NAME"
+          
+          # For forks: inform user about the branch
+          if [ "${{ github.repository }}" != "apache/ozone" ]; then
+            echo "================================================"
+            echo "✅ Branch created: $BRANCH_NAME"
+            echo "📍 Repository: ${{ github.repository }}"
+            echo "🔗 View at: https://github.com/${{ github.repository }}/tree/$BRANCH_NAME"
+            echo ""
+            echo "ℹ️  No PR created (only happens in apache/ozone)"
+            echo "   This is for testing purposes only."
+            echo "================================================"
+          fi
       
       - name: Create or update Pull Request
-        if: steps.check-changes.outputs.changed == 'true' && github.repository == 'apache/ozone'
+        if: steps.check-changes.outputs.changed == 'true' && github.repository == 'apache/ozone' && github.ref_name == 'master'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -333,22 +351,17 @@ jobs:
           # Use single branch name
           BRANCH_NAME="automated-config-doc-update"
           
-          # Check if branch exists remotely
-          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
-            echo "Branch $BRANCH_NAME exists, checking out"
-            git fetch origin "$BRANCH_NAME"
-            git checkout "$BRANCH_NAME"
-            git merge --ff-only origin/HDDS-9225-website-v2 || {
-              echo "Cannot fast-forward, rebasing"
-              git rebase origin/HDDS-9225-website-v2
-            }
-          else
-            echo "Creating new branch $BRANCH_NAME"
-            git checkout -b "$BRANCH_NAME"
-          fi
+          echo "Current branch: $(git branch --show-current)"
+          echo "Current commit: $(git rev-parse HEAD)"
+          
+          # Create/reset branch at current commit
+          git checkout -B "$BRANCH_NAME"
+          echo "Created/reset branch $BRANCH_NAME at current commit"
           
           git add "$TARGET_DIR/99-appendix.md"
           git commit -m "[Auto] Update configuration documentation from ozone ${{ github.sha }}"
+          
+          echo "Pushing $BRANCH_NAME to origin"
           git push -f origin "$BRANCH_NAME"
       
       - name: Create or update Pull Request in ozone-site
