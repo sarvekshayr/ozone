@@ -31,7 +31,7 @@ cat <<EOF
 
 This is an automated pull request triggered by the [$WORKFLOW_NAME](https://github.com/${REPO}/actions/runs/${WORKFLOW_RUN_ID}) workflow run from [\`${COMMIT_SHA}\`](https://github.com/${REPO}/commit/${COMMIT_SHA}) on [\`${BRANCH_NAME}\`](https://github.com/${REPO}/tree/${BRANCH_NAME}).
 
-The configuration documentation has been automatically regenerated from the latest \`ozone-default-generated.xml\` files.
+The configuration documentation has been automatically regenerated from the latest \`ozone-default.xml\` files.
 
 EOF
 

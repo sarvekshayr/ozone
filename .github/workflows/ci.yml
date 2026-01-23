@@ -141,13 +141,82 @@ jobs:
       - build-info
       - generate-config-doc
     # Run on master in apache/ozone, or any branch in forks for testing
+    # Skip automated commits (starting with [Auto]) to avoid loops
     if: |
       github.event_name == 'push' &&
+      !startsWith(github.event.head_commit.message, '[Auto]') &&
       (github.repository == 'apache/ozone' && github.ref_name == 'master' ||
        github.repository != 'apache/ozone')
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout project
+      - name: Checkout repository to search commits
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0  # Fetch full history to find branch point
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract JIRA ID from branch commits
+        id: extract-jira-early
+        run: |
+          # Extract JIRA ID from commits in the current branch
+          # Uses git log with range to find ALL commits not in master
+          
+          echo "Current commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          
+          # For apache/ozone master, just check current commit
+          if [ "${{ github.repository }}" = "apache/ozone" ] && [ "${{ github.ref_name }}" = "master" ]; then
+            echo "On apache/ozone master - checking current commit only"
+            COMMIT_MSG=$(git log -1 --format='%s' ${{ github.sha }})
+            echo "Commit message: $COMMIT_MSG"
+            
+            JIRA_ID=$(echo "$COMMIT_MSG" | grep -oE '(HDDS|OZONE)-[0-9]+' | head -1 || echo "")
+          else
+            # For feature branches, find ALL commits not in master
+            echo "On feature branch - searching all commits not in master"
+            
+            # Fetch master branch
+            git fetch origin master:refs/remotes/origin/master 2>/dev/null || true
+            
+            # Get all commits in current branch that are not in master (oldest to newest)
+            # This is simpler than merge-base approach!
+            JIRA_ID=""
+            while IFS= read -r commit_sha commit_msg; do
+              echo "Checking: $commit_msg"
+              
+              # Skip automated commits
+              if [[ "$commit_msg" == "[Auto]"* ]]; then
+                continue
+              fi
+              
+              # Try to extract JIRA ID
+              EXTRACTED=$(echo "$commit_msg" | grep -oE '(HDDS|OZONE)-[0-9]+' | head -1 || echo "")
+              
+              if [ -n "$EXTRACTED" ]; then
+                JIRA_ID="$EXTRACTED"
+                echo "✅ Found JIRA ID: $JIRA_ID in commit: $commit_msg"
+                break  # Use first JIRA found (from oldest commit)
+              fi
+            done < <(git log origin/master..HEAD --reverse --format='%H %s')
+            
+            # Fallback: if no commits found (shouldn't happen), check current commit
+            if [ -z "$JIRA_ID" ]; then
+              echo "No commits found in branch range, checking current commit"
+              COMMIT_MSG=$(git log -1 --format='%s' HEAD)
+              JIRA_ID=$(echo "$COMMIT_MSG" | grep -oE '(HDDS|OZONE)-[0-9]+' | head -1 || echo "")
+            fi
+          fi
+          
+          if [ -n "$JIRA_ID" ]; then
+            echo "jira_id=$JIRA_ID" >> $GITHUB_OUTPUT
+            echo "✅ Using JIRA ID: $JIRA_ID"
+          else
+            echo "jira_id=" >> $GITHUB_OUTPUT
+            echo "⚠️  No JIRA ID found (this is OK for merge commits)"
+          fi
+      
+      - name: Checkout project for documentation update
         uses: actions/checkout@v4
         with:
           # In apache/ozone master: use the pushed commit
@@ -179,25 +248,6 @@ jobs:
             echo "No changes in Configurations.md"
           fi
       
-      - name: Extract JIRA ID from commit message
-        if: steps.check-changes.outputs.changed == 'true'
-        id: extract-jira
-        run: |
-          # Get current commit message
-          COMMIT_MSG=$(git log -n 1 --format='%s')
-          echo "Commit message: $COMMIT_MSG"
-          
-          # Extract JIRA ID (HDDS-XXXXX or OZONE-XXXXX)
-          JIRA_ID=$(echo "$COMMIT_MSG" | grep -oE '(HDDS|OZONE)-[0-9]+' | head -1 || echo "")
-          
-          if [ -n "$JIRA_ID" ]; then
-            echo "jira_id=$JIRA_ID" >> $GITHUB_OUTPUT
-            echo "Found JIRA ID: $JIRA_ID"
-          else
-            echo "jira_id=" >> $GITHUB_OUTPUT
-            echo "No JIRA ID found in commit message"
-          fi
-      
       - name: Commit and push changes
         if: steps.check-changes.outputs.changed == 'true'
         run: |
@@ -206,9 +256,11 @@ jobs:
           
           # Use single branch name for all automated updates
           BRANCH_NAME="automated-config-doc-update"
+          JIRA_ID="${{ steps.extract-jira-early.outputs.jira_id }}"
           
           echo "Current branch: $(git branch --show-current)"
           echo "Current commit: $(git rev-parse HEAD)"
+          echo "JIRA ID from trigger: $JIRA_ID"
           
           # Create/reset branch at current commit
           git checkout -B "$BRANCH_NAME"
@@ -218,6 +270,9 @@ jobs:
           
           # Commit message references the original commit that triggered this
           COMMIT_MSG="[Auto] Update configuration documentation"
+          if [ -n "$JIRA_ID" ]; then
+            COMMIT_MSG="$JIRA_ID. $COMMIT_MSG"
+          fi
           if [ "${{ github.repository }}" = "apache/ozone" ] && [ "${{ github.ref_name }}" = "master" ]; then
             COMMIT_MSG="$COMMIT_MSG from ${{ github.sha }}"
           else
@@ -238,6 +293,7 @@ jobs:
             echo ""
             echo "ℹ️  No PR created (only happens in apache/ozone)"
             echo "   This is for testing purposes only."
+            echo "   JIRA ID: ${JIRA_ID:-none}"
             echo "================================================"
           fi
       
@@ -248,7 +304,7 @@ jobs:
         run: |
           BRANCH_NAME="automated-config-doc-update"
           REPO="${{ github.repository }}"
-          JIRA_ID="${{ steps.extract-jira.outputs.jira_id }}"
+          JIRA_ID="${{ steps.extract-jira-early.outputs.jira_id }}"
           
           # Generate PR body
           dev-support/ci/create-config-pr-body.sh \
@@ -280,14 +336,46 @@ jobs:
     needs:
       - build-info
       - generate-config-doc
-    # Run on master in apache/ozone, or any branch in forks for testing
+    # Only run on master in apache/ozone (skip for forks to avoid permission issues)
+    # Skip automated commits (starting with [Auto]) to avoid loops
     if: |
-      github.event_name == 'push' &&
-      (github.repository == 'apache/ozone' && github.ref_name == 'master' ||
-       github.repository != 'apache/ozone')
+      github.repository == 'apache/ozone' && 
+      github.event_name == 'push' && 
+      github.ref_name == 'master' &&
+      !startsWith(github.event.head_commit.message, '[Auto]')
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout ozone repository
+      - name: Checkout repository to search commits
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0  # Fetch full history to find branch point
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract JIRA ID from branch commits
+        id: extract-jira-early
+        run: |
+          # Extract JIRA ID from commits in the current branch
+          # For apache/ozone master, just check the current commit
+          
+          echo "Current commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "On apache/ozone master - checking current commit only"
+          
+          COMMIT_MSG=$(git log -1 --format='%s' ${{ github.sha }})
+          echo "Commit message: $COMMIT_MSG"
+          
+          JIRA_ID=$(echo "$COMMIT_MSG" | grep -oE '(HDDS|OZONE)-[0-9]+' | head -1 || echo "")
+          
+          if [ -n "$JIRA_ID" ]; then
+            echo "jira_id=$JIRA_ID" >> $GITHUB_OUTPUT
+            echo "✅ Using JIRA ID: $JIRA_ID"
+          else
+            echo "jira_id=" >> $GITHUB_OUTPUT
+            echo "⚠️  No JIRA ID found (this is OK for merge commits)"
+          fi
+      
+      - name: Checkout ozone repository for script access
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.build-info.outputs.sha }}
@@ -359,7 +447,15 @@ jobs:
           echo "Created/reset branch $BRANCH_NAME at current commit"
           
           git add "$TARGET_DIR/99-appendix.md"
-          git commit -m "[Auto] Update configuration documentation from ozone ${{ github.sha }}"
+          
+          # Build commit message with JIRA ID if available
+          JIRA_ID="${{ steps.extract-jira-early.outputs.jira_id }}"
+          COMMIT_MSG="[Auto] Update configuration documentation from ozone ${{ github.sha }}"
+          if [ -n "$JIRA_ID" ]; then
+            COMMIT_MSG="$JIRA_ID. $COMMIT_MSG"
+          fi
+          
+          git commit -m "$COMMIT_MSG"
           
           echo "Pushing $BRANCH_NAME to origin"
           git push -f origin "$BRANCH_NAME"
@@ -379,22 +475,19 @@ jobs:
           
           BRANCH_NAME="automated-config-doc-update"
           REPO="${{ github.repository }}"
-          
-          # Extract JIRA ID from ozone commit
-          cd ..
-          COMMIT_MSG=$(git log -n 1 --format='%s')
-          JIRA_ID=$(echo "$COMMIT_MSG" | grep -oE '(HDDS|OZONE)-[0-9]+' | head -1 || echo "")
-          
-          cd ozone-site
+          JIRA_ID="${{ steps.extract-jira-early.outputs.jira_id }}"
           
           # Generate PR body
-          ../dev-support/ci/create-config-pr-body.sh \
+          cd ..
+          dev-support/ci/create-config-pr-body.sh \
             "$REPO" \
             "${{ github.workflow }}" \
             "${{ github.run_id }}" \
             "${{ github.ref_name }}" \
             "${{ github.sha }}" \
-            "$JIRA_ID" > pr_body.txt
+            "$JIRA_ID" > ozone-site/pr_body.txt
+          
+          cd ozone-site
           
           # Check if PR already exists
           EXISTING_PR=$(gh pr list --repo "${{ github.repository_owner }}/ozone-site" \
