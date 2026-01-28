@@ -38,6 +38,15 @@ Buckets Can Be Listed
         Should Contain    ${result}    ecbucket-${CLUSTER_VERSION}
     END
 
+Execute Container Balancer Status Command
+    # Container balancer command was introduced in version 1.2.0
+    # Skip test if either client or cluster doesn't support it
+    Pass Execution If    '${CLIENT_VERSION}' < '${CONTAINERBALANCER_VERSION}'    Client does not support container balancer
+    Pass Execution If    '${CLUSTER_VERSION}' < '${CONTAINERBALANCER_VERSION}'   Cluster does not support container balancer
+    
+    ${result} =     Execute     ozone admin containerbalancer status
+    Should Contain    ${result}    ContainerBalancer
+
 Bucket Without Replication Config
     Verify Bucket Empty Replication Config    /vol1/bucket1
 
