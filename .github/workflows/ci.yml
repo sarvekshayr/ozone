@@ -280,13 +280,13 @@ jobs:
     needs:
       - build-info
       - generate-config-doc
-    # Only run on master in apache/ozone (skip for forks to avoid permission issues)
+    # Run on master in apache/ozone, or HDDS-11072-test-fork in sarvekshayr/ozone for testing
     # Skip automated commits (starting with [Auto]) to avoid loops
     if: |
-      github.repository == 'apache/ozone' && 
-      github.event_name == 'push' && 
-      github.ref_name == 'master' &&
-      !startsWith(github.event.head_commit.message, '[Auto]')
+      github.event_name == 'push' &&
+      !startsWith(github.event.head_commit.message, '[Auto]') &&
+      (github.repository == 'apache/ozone' && github.ref_name == 'master' ||
+       github.repository == 'sarvekshayr/ozone' && github.ref_name == 'HDDS-11072-test-fork')
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
