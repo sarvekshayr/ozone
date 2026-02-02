@@ -242,7 +242,10 @@ jobs:
           fi
       
       - name: Create or update Pull Request
-        if: steps.check-changes.outputs.changed == 'true' && github.repository == 'apache/ozone' && github.ref_name == 'master'
+        if: |
+          steps.check-changes.outputs.changed == 'true' &&
+          (github.repository == 'apache/ozone' && github.ref_name == 'master' ||
+           github.repository == 'sarvekshayr/ozone' && github.ref_name == 'HDDS-11072-test-fork')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -259,8 +262,16 @@ jobs:
             "${{ github.sha }}" \
             "$JIRA_ID" > pr_body.txt
           
+          # Determine base branch
+          if [ "${{ github.repository }}" = "apache/ozone" ]; then
+            BASE_BRANCH="master"
+          else
+            BASE_BRANCH="${{ github.ref_name }}"
+          fi
+          echo "Using base branch: $BASE_BRANCH"
+          
           # Check if PR already exists
-          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base master --json number --jq '.[0].number' || echo "")
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base "$BASE_BRANCH" --json number --jq '.[0].number' || echo "")
           
           if [ -n "$EXISTING_PR" ]; then
             echo "Updating existing PR #$EXISTING_PR"
@@ -271,7 +282,7 @@ jobs:
             if [ -n "$JIRA_ID" ]; then
               TITLE="$JIRA_ID. $TITLE"
             fi
-            gh pr create --base master --head "$BRANCH_NAME" \
+            gh pr create --base "$BASE_BRANCH" --head "$BRANCH_NAME" \
               --title "$TITLE" \
               --body-file pr_body.txt
           fi
@@ -357,11 +368,11 @@ jobs:
             exit 0
           fi
           
-          echo "Copying to $TARGET_DIR/99-appendix.md"
+          echo "Copying to $TARGET_DIR/05-appendix.md"
           cp ../Configurations.md "$TARGET_DIR/05-appendix.md"
           
           # Check if file changed using git status
-          if git status --porcelain "$TARGET_DIR/99-appendix.md" | grep -q .; then
+          if git status --porcelain "$TARGET_DIR/05-appendix.md" | grep -q .; then
             echo "Configurations.md has changed in ozone-site"
           else
             echo "No changes in ozone-site documentation"
@@ -381,7 +392,7 @@ jobs:
           git checkout -B "$BRANCH_NAME"
           echo "Created/reset branch $BRANCH_NAME at current commit"
           
-          git add "$TARGET_DIR/99-appendix.md"
+          git add "$TARGET_DIR/05-appendix.md"
           
           # Build commit message with JIRA ID if available
           JIRA_ID="${{ steps.extract-jira-early.outputs.jira_id }}"
@@ -396,7 +407,10 @@ jobs:
           git push -f origin "$BRANCH_NAME"
       
       - name: Create or update Pull Request in ozone-site
-        if: steps.check-site-repo.outputs.exists == 'true' && github.repository == 'apache/ozone'
+        if: |
+          steps.check-site-repo.outputs.exists == 'true' &&
+          (github.repository == 'apache/ozone' ||
+           github.repository == 'sarvekshayr/ozone' && github.ref_name == 'HDDS-11072-test-fork')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
