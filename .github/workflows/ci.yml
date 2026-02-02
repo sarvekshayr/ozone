@@ -174,7 +174,7 @@ jobs:
       - name: Checkout project for documentation update
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.repository == 'apache/ozone' && github.ref_name == 'master' && needs.build-info.outputs.sha || 'master' }}
+          ref: ${{ github.repository == 'apache/ozone' && needs.build-info.outputs.sha || github.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Download generated documentation
@@ -353,7 +353,7 @@ jobs:
           repository: ${{ github.repository_owner }}/ozone-site
           ref: 'HDDS-9225-website-v2'
           path: ozone-site
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.repository == 'apache/ozone' && secrets.GITHUB_TOKEN || secrets.OZONE_SITE_TOKEN }}
       
       - name: Copy and commit documentation
         if: steps.check-site-repo.outputs.exists == 'true'
@@ -407,12 +407,9 @@ jobs:
           git push -f origin "$BRANCH_NAME"
       
       - name: Create or update Pull Request in ozone-site
-        if: |
-          steps.check-site-repo.outputs.exists == 'true' &&
-          (github.repository == 'apache/ozone' ||
-           github.repository == 'sarvekshayr/ozone' && github.ref_name == 'HDDS-11072-test-fork')
+        if: steps.check-site-repo.outputs.exists == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.repository == 'apache/ozone' && secrets.GITHUB_TOKEN || secrets.OZONE_SITE_TOKEN }}
         run: |
           cd ozone-site
           
