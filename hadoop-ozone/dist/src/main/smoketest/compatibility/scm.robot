@@ -24,3 +24,12 @@ Picks up command line options
     ${processes} =    Wait for server command-line options
     Should Contain    ${processes}   %{HDFS_STORAGECONTAINERMANAGER_OPTS}
     Check client command-line options
+
+List container
+    [Documentation]    Creates a container then lists via SCM (proto list request path in admin CLI).
+    Execute    ozone admin container create
+    ${output} =    Execute    ozone admin container list --start 0 --count 10
+    Should Contain    ${output}    [
+    Should Contain    ${output}    containerID
+    Should Not Contain    ${output}    Exception
+    Should Not Contain    ${output}    IOException
