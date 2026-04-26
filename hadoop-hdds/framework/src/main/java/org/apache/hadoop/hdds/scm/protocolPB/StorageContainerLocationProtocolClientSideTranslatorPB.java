@@ -17,7 +17,6 @@
 
 package org.apache.hadoop.hdds.scm.protocolPB;
 
-import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.EC;
 import static org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMCloseContainerResponseProto.Status.CONTAINER_ALREADY_CLOSED;
 import static org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMCloseContainerResponseProto.Status.CONTAINER_ALREADY_CLOSING;
 
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hdds.annotation.InterfaceAudience;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
-import org.apache.hadoop.hdds.client.ReplicatedReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
@@ -426,71 +424,23 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
     return cps;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
-  public ContainerListResult listContainer(long startContainerID, int count)
-      throws IOException {
-    return listContainer(startContainerID, count, null, null, null);
-  }
-
-  @Override
-  public ContainerListResult listContainer(long startContainerID, int count,
-      HddsProtos.LifeCycleState state) throws IOException {
-    return listContainer(startContainerID, count, state, null, null);
-  }
-
-  @Override
-  public ContainerListResult listContainer(long startContainerID, int count,
-      HddsProtos.LifeCycleState state,
-      HddsProtos.ReplicationType replicationType,
-      ReplicationConfig replicationConfig)
-      throws IOException {
-    return listContainer(startContainerID, count, state, replicationType, replicationConfig, null);
-  }
-
-  @Override
-  public ContainerListResult listContainer(long startContainerID, int count,
-      HddsProtos.LifeCycleState state,
-      HddsProtos.ReplicationType replicationType,
-      ReplicationConfig replicationConfig,
-      Boolean suppressed)
-      throws IOException {
+  public ContainerListResult listContainer(SCMListContainerRequestProto request) throws IOException {
+    long startContainerID = request.hasStartContainerID() ? request.getStartContainerID() : 0L;
     Preconditions.checkState(startContainerID >= 0,
         "Container ID cannot be negative.");
-    Preconditions.checkState(count > 0,
+    Preconditions.checkState(request.getCount() > 0,
         "Container count must be greater than 0.");
-    SCMListContainerRequestProto.Builder builder = SCMListContainerRequestProto
-        .newBuilder();
-    builder.setStartContainerID(startContainerID);
-    builder.setCount(count);
-    builder.setTraceID(TracingUtil.exportCurrentSpan());
-    if (suppressed != null) {
-      builder.setSuppressed(suppressed);
-    }
-    if (state != null) {
-      builder.setState(state);
-    }
-    if (replicationConfig != null) {
-      if (replicationConfig.getReplicationType() == EC) {
-        builder.setType(EC);
-        builder.setEcReplicationConfig(
-            ((ECReplicationConfig)replicationConfig).toProto());
-      } else {
-        builder.setType(replicationConfig.getReplicationType());
-        builder.setFactor(((ReplicatedReplicationConfig)replicationConfig)
-            .getReplicationFactor());
-      }
-    } else if (replicationType != null) {
-      builder.setType(replicationType);
-    }
+    SCMListContainerRequestProto withTrace = request.toBuilder()
+        .setTraceID(TracingUtil.exportCurrentSpan())
+        .build();
+    return submitListContainer(withTrace);
+  }
 
-    SCMListContainerRequestProto request = builder.build();
-
+  private ContainerListResult submitListContainer(SCMListContainerRequestProto request) throws IOException {
     SCMListContainerResponseProto response =
         submitRequest(Type.ListContainer,
-            builder1 -> builder1.setScmListContainerRequest(request))
+            builder -> builder.setScmListContainerRequest(request))
             .getScmListContainerResponse();
     List<ContainerInfo> containerList = new ArrayList<>();
     for (HddsProtos.ContainerInfoProto containerInfoProto : response
@@ -503,15 +453,6 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
     } else {
       return new ContainerListResult(containerList, -1);
     }
-  }
-
-  @Deprecated
-  @Override
-  public ContainerListResult listContainer(long startContainerID, int count,
-      HddsProtos.LifeCycleState state, HddsProtos.ReplicationFactor factor)
-      throws IOException {
-    throw new UnsupportedOperationException("Should no longer be called from " +
-        "the client side");
   }
 
   /**

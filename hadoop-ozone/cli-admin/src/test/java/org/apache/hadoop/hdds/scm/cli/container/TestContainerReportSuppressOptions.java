@@ -23,9 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -41,6 +40,7 @@ import java.util.List;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.protocol.DatanodeID;
 import org.apache.hadoop.hdds.protocol.MockDatanodeDetails;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMListContainerRequestProto;
 import org.apache.hadoop.hdds.scm.client.ScmClient;
 import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
@@ -82,9 +82,9 @@ public class TestContainerReportSuppressOptions {
     when(scmClient.getReplicationManagerReport()).thenAnswer(inv -> createMockReport());
 
     // Mock listContainer
-    when(scmClient.listContainer(anyLong(), anyInt(), eq(null), eq(null), eq(null), eq(true)))
+    when(scmClient.listContainer(argThat((SCMListContainerRequestProto r) -> isSuppressedFilter(r))))
         .thenAnswer(inv -> listSuppressedContainers());
-    when(scmClient.listContainer(anyLong(), anyInt(), eq(null), eq(null), eq(null), eq(false)))
+    when(scmClient.listContainer(argThat((SCMListContainerRequestProto r) -> isNonSuppressedFilter(r))))
         .thenAnswer(inv -> listNonSuppressedContainers());
 
     // Mock suppress/unsuppress
@@ -306,5 +306,13 @@ public class TestContainerReportSuppressOptions {
       }
     }
     return new ContainerListResult(nonSuppressed, nonSuppressed.size());
+  }
+
+  private static boolean isSuppressedFilter(SCMListContainerRequestProto r) {
+    return r != null && r.hasSuppressed() && r.getSuppressed();
+  }
+
+  private static boolean isNonSuppressedFilter(SCMListContainerRequestProto r) {
+    return r != null && r.hasSuppressed() && !r.getSuppressed();
   }
 }

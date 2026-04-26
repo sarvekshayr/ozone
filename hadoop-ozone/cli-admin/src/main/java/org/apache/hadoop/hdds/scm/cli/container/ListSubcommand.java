@@ -37,6 +37,7 @@ import org.apache.hadoop.hdds.scm.cli.ScmSubcommand;
 import org.apache.hadoop.hdds.scm.client.ScmClient;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerListResult;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec;
 import org.apache.hadoop.hdds.server.JsonUtils;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Visibility;
@@ -133,8 +134,8 @@ public class ListSubcommand extends ScmSubcommand {
         count = maxCountAllowed;
       }
 
-      ContainerListResult containerListResult =
-          scmClient.listContainer(startId, count, state, type, repConfig, suppressed);
+      ContainerListResult containerListResult = scmClient.listContainer(ScmListContainerRequestCodec.toProto(
+          startId, count, state, null, type, repConfig, suppressed, null));
 
       writeContainers(sequenceWriter, containerListResult.getContainerInfoList());
 
@@ -173,8 +174,8 @@ public class ListSubcommand extends ScmSubcommand {
     int fetchedCount;
 
     do {
-      ContainerListResult result =
-          scmClient.listContainer(currentStartId, batchSize, state, type, repConfig, suppressed);
+      ContainerListResult result = scmClient.listContainer(ScmListContainerRequestCodec.toProto(
+          currentStartId, batchSize, state, null, type, repConfig, suppressed, null));
       fetchedCount = result.getContainerInfoList().size();
 
       writeContainers(writer, result.getContainerInfoList());
