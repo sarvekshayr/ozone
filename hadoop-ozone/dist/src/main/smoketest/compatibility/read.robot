@@ -16,6 +16,7 @@
 *** Settings ***
 Documentation       Read Compatibility
 Resource            ../ozone-lib/shell.robot
+Resource            ../commonlib.robot
 Resource            setup.robot
 Test Timeout        5 minutes
 
@@ -30,6 +31,8 @@ Key List With Replication
 
 *** Test Cases ***
 SCM admin can create and list containers
+    Get Security Enabled From Config
+    Run Keyword If    '${SECURITY_ENABLED}' == 'true'    Kinit test user    scm    scm.keytab
     Execute    ozone admin container create
     ${output} =    Execute    ozone admin container list --start 0 --count 10
     Should Contain    ${output}    [
