@@ -29,6 +29,14 @@ Key List With Replication
 
 
 *** Test Cases ***
+SCM admin can create and list containers
+    Execute    ozone admin container create
+    ${output} =    Execute    ozone admin container list --start 0 --count 10
+    Should Contain    ${output}    [
+    Should Contain    ${output}    containerID
+    Should Not Contain    ${output}    Exception
+    Should Not Contain    ${output}    IOException
+
 Buckets Can Be Listed
     ${result} =     Execute     ozone sh bucket list /vol1
     Should Contain    ${result}    bucket1
