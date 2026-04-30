@@ -127,11 +127,12 @@ public final class ScmListContainerRequestCodec {
       builder.setState(state);
     }
     if (repConfig != null) {
-      if (repConfig.getReplicationType() == EC) {
+      HddsProtos.ReplicationType repType = repConfig.getReplicationType();
+      if (repType == EC) {
         builder.setType(EC);
         builder.setEcReplicationConfig(((ECReplicationConfig) repConfig).toProto());
       } else {
-        builder.setType(repConfig.getReplicationType());
+        builder.setType(repType);
         builder.setFactor(((ReplicatedReplicationConfig) repConfig)
             .getReplicationFactor());
       }
@@ -163,14 +164,14 @@ public final class ScmListContainerRequestCodec {
       replicationType = request.getType();
     }
     if (replicationType != null) {
-      if (replicationType == HddsProtos.ReplicationType.EC) {
+      if (replicationType == EC) {
         if (request.hasEcReplicationConfig()) {
           repConfig = new ECReplicationConfig(request.getEcReplicationConfig());
         }
       } else {
         if (request.hasFactor()) {
           repConfig = ReplicationConfig
-              .fromProtoTypeAndFactor(request.getType(), request.getFactor());
+              .fromProtoTypeAndFactor(replicationType, request.getFactor());
         }
       }
     } else if (request.hasFactor()) {
