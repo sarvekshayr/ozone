@@ -550,6 +550,11 @@ public final class OMConfigKeys {
   public static final int OZONE_OM_CONTAINER_LOCATION_CACHE_SIZE_DEFAULT
       = 100_000;
 
+  public static final String OZONE_OM_CONTAINER_LOCATION_DATANODE_CACHE_SIZE
+      = "ozone.om.container.location.datanode.cache.size";
+  public static final int
+      OZONE_OM_CONTAINER_LOCATION_DATANODE_CACHE_SIZE_DEFAULT = 10_000;
+
   public static final String OZONE_OM_CONTAINER_LOCATION_CACHE_TTL
       = "ozone.om.container.location.cache.ttl";
 

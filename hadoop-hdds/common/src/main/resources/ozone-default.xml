@@ -4386,6 +4386,16 @@
   </property>
 
   <property>
+    <name>ozone.om.container.location.datanode.cache.size</name>
+    <value>10000</value>
+    <tag>OZONE, OM</tag>
+    <description>
+      The size of the datanode details cache used to reduce duplicate datanode objects
+      retained by the container location cache in Ozone Manager.
+    </description>
+  </property>
+
+  <property>
     <name>ozone.om.container.location.cache.ttl</name>
     <value>360m</value>
     <tag>OZONE, OM</tag>
