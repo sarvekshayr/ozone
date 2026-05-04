@@ -42,7 +42,6 @@ import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos.DeletedBlocksTransactionSummary;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ContainerBalancerStatusInfoResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.DecommissionScmResponseProto;
-import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMListContainerRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.StartContainerBalancerResponseProto;
 import org.apache.hadoop.hdds.scm.DatanodeAdminError;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
@@ -57,7 +56,7 @@ import org.apache.hadoop.hdds.scm.container.ContainerReplicaInfo;
 import org.apache.hadoop.hdds.scm.container.ReplicationManagerReport;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
-import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec.ListContainerQuery;
 import org.apache.hadoop.hdds.scm.protocol.StorageContainerLocationProtocol;
 import org.apache.hadoop.hdds.scm.protocolPB.StorageContainerLocationProtocolClientSideTranslatorPB.ScmNodeTarget;
 import org.apache.hadoop.hdds.scm.storage.ContainerProtocolCalls;
@@ -364,25 +363,28 @@ public class ContainerOperationClient implements ScmClient {
   }
   
   @Override
-  public ContainerListResult listContainer(SCMListContainerRequestProto request) throws IOException {
-    int count = request.getCount();
+  public ContainerListResult listContainer(ListContainerQuery query) throws IOException {
+    int count = query.getCount();
     if (count > maxCountOfContainerList) {
       LOG.warn("Attempting to list {} containers. However, this exceeds" +
           " the cluster's current limit of {}. The results will be capped at the" +
           " maximum allowed count.", count, maxCountOfContainerList);
-      request = request.toBuilder()
-              .setCount(maxCountOfContainerList)
-              .build();
+      query = ListContainerQuery.newBuilder(query.getStartContainerID(), maxCountOfContainerList)
+          .setState(query.getState())
+          .setFactor(query.getFactor())
+          .setReplicationType(query.getReplicationType())
+          .setReplicationConfig(query.getReplicationConfig())
+          .setSuppressed(query.getSuppressed())
+          .build();
     }
-    return storageContainerLocationClient.listContainer(request);
+    return storageContainerLocationClient.listContainer(query);
   }
 
   @Deprecated
   @Override
   public ContainerListResult listContainer(long startContainerID,
       int count) throws IOException {
-    return listContainer(ScmListContainerRequestCodec.toProto(
-        startContainerID, count, null, null, null, null, null, null));
+    return listContainer(ListContainerQuery.newBuilder(startContainerID, count).build());
   }
 
   @Deprecated
@@ -391,8 +393,11 @@ public class ContainerOperationClient implements ScmClient {
       int count, HddsProtos.LifeCycleState state,
       HddsProtos.ReplicationType repType,
       ReplicationConfig replicationConfig) throws IOException {
-    return listContainer(ScmListContainerRequestCodec.toProto(
-        startContainerID, count, state, null, repType, replicationConfig, null, null));
+    return listContainer(ListContainerQuery.newBuilder(startContainerID, count)
+        .setState(state)
+        .setReplicationType(repType)
+        .setReplicationConfig(replicationConfig)
+        .build());
   }
 
   @Deprecated
@@ -402,8 +407,12 @@ public class ContainerOperationClient implements ScmClient {
       HddsProtos.ReplicationType repType,
       ReplicationConfig replicationConfig,
       Boolean suppressed) throws IOException {
-    return listContainer(ScmListContainerRequestCodec.toProto(
-        startContainerID, count, state, null, repType, replicationConfig, suppressed, null));
+    return listContainer(ListContainerQuery.newBuilder(startContainerID, count)
+        .setState(state)
+        .setReplicationType(repType)
+        .setReplicationConfig(replicationConfig)
+        .setSuppressed(suppressed)
+        .build());
   }
 
   @Override

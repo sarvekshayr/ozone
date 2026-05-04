@@ -136,6 +136,8 @@ import org.apache.hadoop.hdds.scm.container.ContainerListResult;
 import org.apache.hadoop.hdds.scm.container.ReplicationManagerReport;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec.ListContainerQuery;
 import org.apache.hadoop.hdds.scm.protocol.StorageContainerLocationProtocol;
 import org.apache.hadoop.hdds.scm.proxy.SCMContainerLocationFailoverProxyProvider;
 import org.apache.hadoop.hdds.tracing.TracingUtil;
@@ -425,13 +427,13 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
   }
 
   @Override
-  public ContainerListResult listContainer(SCMListContainerRequestProto request) throws IOException {
-    long startContainerID = request.hasStartContainerID() ? request.getStartContainerID() : 0L;
+  public ContainerListResult listContainer(ListContainerQuery query) throws IOException {
+    long startContainerID = query.getStartContainerID();
     Preconditions.checkState(startContainerID >= 0,
         "Container ID cannot be negative.");
-    Preconditions.checkState(request.getCount() > 0,
+    Preconditions.checkState(query.getCount() > 0,
         "Container count must be greater than 0.");
-    SCMListContainerRequestProto withTrace = request.toBuilder()
+    SCMListContainerRequestProto withTrace = ScmListContainerRequestCodec.toProto(query).toBuilder()
         .setTraceID(TracingUtil.exportCurrentSpan())
         .build();
     return submitListContainer(withTrace);

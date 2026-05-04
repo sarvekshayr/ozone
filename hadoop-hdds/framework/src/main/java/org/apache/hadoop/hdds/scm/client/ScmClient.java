@@ -42,6 +42,8 @@ import org.apache.hadoop.hdds.scm.container.ContainerReplicaInfo;
 import org.apache.hadoop.hdds.scm.container.ReplicationManagerReport;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec.ListContainerQuery;
 import org.apache.hadoop.ozone.upgrade.UpgradeFinalization.StatusAndMessages;
 
 /**
@@ -117,13 +119,19 @@ public interface ScmClient extends Closeable {
   void deleteContainer(long containerId, boolean force) throws IOException;
 
   /**
-   * Lists containers using a single SCM list container request.
+   * Lists containers using decoded list parameters.
    *
-   * @param request start containerID, count and optional filters
-   * @return a list of containers matching the filters.
-   * @throws IOException
+   * @param query start container id, count and optional filters
+   * @return containers matching the query
    */
-  ContainerListResult listContainer(SCMListContainerRequestProto request) throws IOException;
+  ContainerListResult listContainer(ListContainerQuery query) throws IOException;
+
+  /**
+   * Same as {@link #listContainer(ListContainerQuery)} after decoding {@code request}.
+   */
+  default ContainerListResult listContainer(SCMListContainerRequestProto request) throws IOException {
+    return listContainer(ScmListContainerRequestCodec.fromProto(request));
+  }
 
   /**
    * Lists a range of containers and get their info.

@@ -25,7 +25,6 @@ import org.apache.hadoop.hdds.client.ReplicatedReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMListContainerRequestProto;
-import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SCMListContainerRequestProto.Builder;
 
 /**
  * Codec between {@link SCMListContainerRequestProto} and {@link ListContainerQuery} for list containers.
@@ -36,11 +35,16 @@ public final class ScmListContainerRequestCodec {
   }
 
   /**
-   * Immutable view of list container request fields after {@link #fromProto}.
+   * Immutable parameters for listing containers (encode and decode paths).
+   * Construct with {@link ListContainerQuery#newBuilder(long, int)} and optional fluent
+   * setters on {@link ListContainerQuery.Builder}; further filters extend the builder
+   * without widening the {@link #toProto(ListContainerQuery)} API.
    */
   public static final class ListContainerQuery {
     private final long startContainerID;
     private final int count;
+    @Nullable
+    private final String traceId;
     @Nullable
     private final HddsProtos.LifeCycleState state;
     @Nullable
@@ -52,19 +56,19 @@ public final class ScmListContainerRequestCodec {
     @Nullable
     private final Boolean suppressed;
 
-    private ListContainerQuery(long startContainerID, int count,
-        @Nullable HddsProtos.LifeCycleState state,
-        @Nullable HddsProtos.ReplicationFactor factor,
-        @Nullable HddsProtos.ReplicationType replicationType,
-        @Nullable ReplicationConfig replicationConfig,
-        @Nullable Boolean suppressed) {
-      this.startContainerID = startContainerID;
-      this.count = count;
-      this.state = state;
-      this.factor = factor;
-      this.replicationType = replicationType;
-      this.replicationConfig = replicationConfig;
-      this.suppressed = suppressed;
+    private ListContainerQuery(Builder builder) {
+      this.startContainerID = builder.startContainerID;
+      this.count = builder.count;
+      this.traceId = builder.traceId;
+      this.state = builder.state;
+      this.factor = builder.factor;
+      this.replicationType = builder.replicationType;
+      this.replicationConfig = builder.replicationConfig;
+      this.suppressed = builder.suppressed;
+    }
+
+    public static Builder newBuilder(long startContainerID, int count) {
+      return new Builder(startContainerID, count);
     }
 
     public long getStartContainerID() {
@@ -73,6 +77,11 @@ public final class ScmListContainerRequestCodec {
 
     public int getCount() {
       return count;
+    }
+
+    @Nullable
+    public String getTraceId() {
+      return traceId;
     }
 
     @Nullable
@@ -99,49 +108,100 @@ public final class ScmListContainerRequestCodec {
     public Boolean getSuppressed() {
       return suppressed;
     }
+
+    /** Fluent builder for {@link ListContainerQuery}. */
+    public static final class Builder {
+      private final long startContainerID;
+      private final int count;
+      @Nullable
+      private String traceId;
+      @Nullable
+      private HddsProtos.LifeCycleState state;
+      @Nullable
+      private HddsProtos.ReplicationFactor factor;
+      @Nullable
+      private HddsProtos.ReplicationType replicationType;
+      @Nullable
+      private ReplicationConfig replicationConfig;
+      @Nullable
+      private Boolean suppressed;
+
+      private Builder(long startContainerID, int count) {
+        this.startContainerID = startContainerID;
+        this.count = count;
+      }
+
+      public Builder setTraceId(@Nullable String traceIdVal) {
+        this.traceId = traceIdVal;
+        return this;
+      }
+
+      public Builder setState(@Nullable HddsProtos.LifeCycleState stateVal) {
+        this.state = stateVal;
+        return this;
+      }
+
+      public Builder setFactor(@Nullable HddsProtos.ReplicationFactor factorVal) {
+        this.factor = factorVal;
+        return this;
+      }
+
+      public Builder setReplicationType(
+          @Nullable HddsProtos.ReplicationType replicationTypeVal) {
+        this.replicationType = replicationTypeVal;
+        return this;
+      }
+
+      public Builder setReplicationConfig(@Nullable ReplicationConfig replicationConfigVal) {
+        this.replicationConfig = replicationConfigVal;
+        return this;
+      }
+
+      public Builder setSuppressed(@Nullable Boolean suppressedVal) {
+        this.suppressed = suppressedVal;
+        return this;
+      }
+
+      public ListContainerQuery build() {
+        return new ListContainerQuery(this);
+      }
+    }
   }
 
-  /**
-   * Builds {@link SCMListContainerRequestProto} from Java fields.
-   */
-  @SuppressWarnings("checkstyle:ParameterNumber")
-  public static SCMListContainerRequestProto toProto(
-      long startContainerID,
-      int count,
-      @Nullable HddsProtos.LifeCycleState state,
-      @Nullable HddsProtos.ReplicationFactor factor,
-      @Nullable HddsProtos.ReplicationType replicationType,
-      @Nullable ReplicationConfig repConfig,
-      @Nullable Boolean suppressed,
-      @Nullable String traceId) {
-    Builder builder = SCMListContainerRequestProto.newBuilder()
-        .setCount(count)
-        .setStartContainerID(startContainerID);
+  public static SCMListContainerRequestProto toProto(ListContainerQuery query) {
+    SCMListContainerRequestProto.Builder proto = SCMListContainerRequestProto.newBuilder()
+        .setCount(query.getCount())
+        .setStartContainerID(query.getStartContainerID());
+    String traceId = query.getTraceId();
     if (traceId != null) {
-      builder.setTraceID(traceId);
+      proto.setTraceID(traceId);
     }
-    if (suppressed != null) {
-      builder.setSuppressed(suppressed);
-    }
+    HddsProtos.LifeCycleState state = query.getState();
     if (state != null) {
-      builder.setState(state);
+      proto.setState(state);
     }
+    ReplicationConfig repConfig = query.getReplicationConfig();
+    HddsProtos.ReplicationType replicationType = query.getReplicationType();
+    HddsProtos.ReplicationFactor factor = query.getFactor();
     if (repConfig != null) {
       HddsProtos.ReplicationType repType = repConfig.getReplicationType();
       if (repType == EC) {
-        builder.setType(EC);
-        builder.setEcReplicationConfig(((ECReplicationConfig) repConfig).toProto());
+        proto.setType(EC);
+        proto.setEcReplicationConfig(((ECReplicationConfig) repConfig).toProto());
       } else {
-        builder.setType(repType);
-        builder.setFactor(((ReplicatedReplicationConfig) repConfig)
-            .getReplicationFactor());
+        proto.setType(repType);
+        proto.setFactor(((ReplicatedReplicationConfig) repConfig).getReplicationFactor());
       }
     } else if (replicationType != null) {
-      builder.setType(replicationType);
+      proto.setType(replicationType);
     } else if (factor != null) {
-      builder.setFactor(factor);
+      proto.setFactor(factor);
     }
-    return builder.build();
+    Boolean suppressed = query.getSuppressed();
+    if (suppressed != null) {
+      proto.setSuppressed(suppressed);
+    }
+    return proto.build();
   }
 
   /**
@@ -153,32 +213,37 @@ public final class ScmListContainerRequestCodec {
       startContainerID = request.getStartContainerID();
     }
     int count = request.getCount();
-    HddsProtos.LifeCycleState state = null;
-    HddsProtos.ReplicationFactor factor = null;
-    HddsProtos.ReplicationType replicationType = null;
-    ReplicationConfig repConfig = null;
-    if (request.hasState()) {
-      state = request.getState();
+
+    ListContainerQuery.Builder builder = ListContainerQuery.newBuilder(startContainerID, count);
+
+    if (request.hasTraceID()) {
+      builder.setTraceId(request.getTraceID());
     }
+    if (request.hasState()) {
+      builder.setState(request.getState());
+    }
+    HddsProtos.ReplicationType replicationType = null;
     if (request.hasType()) {
       replicationType = request.getType();
+      builder.setReplicationType(replicationType);
     }
     if (replicationType != null) {
       if (replicationType == EC) {
         if (request.hasEcReplicationConfig()) {
-          repConfig = new ECReplicationConfig(request.getEcReplicationConfig());
+          builder.setReplicationConfig(new ECReplicationConfig(request.getEcReplicationConfig()));
         }
       } else {
         if (request.hasFactor()) {
-          repConfig = ReplicationConfig
-              .fromProtoTypeAndFactor(replicationType, request.getFactor());
+          builder.setReplicationConfig(ReplicationConfig.fromProtoTypeAndFactor(replicationType, request.getFactor()));
         }
       }
     } else if (request.hasFactor()) {
-      factor = request.getFactor();
+      builder.setFactor(request.getFactor());
     }
-    Boolean suppressed = request.hasSuppressed() ? request.getSuppressed() : null;
-    return new ListContainerQuery(startContainerID, count, state, factor,
-        replicationType, repConfig, suppressed);
+
+    if (request.hasSuppressed()) {
+      builder.setSuppressed(request.getSuppressed());
+    }
+    return builder.build();
   }
 }

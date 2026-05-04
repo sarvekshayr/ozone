@@ -45,7 +45,7 @@ import org.apache.hadoop.hdds.scm.ha.SCMContext;
 import org.apache.hadoop.hdds.scm.ha.SCMHAManagerStub;
 import org.apache.hadoop.hdds.scm.ha.SCMNodeDetails;
 import org.apache.hadoop.hdds.scm.pipeline.PipelineID;
-import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec.ListContainerQuery;
 import org.apache.hadoop.hdds.scm.protocol.StorageContainerLocationProtocolServerSideTranslatorPB;
 import org.apache.hadoop.hdds.utils.ProtocolMessageMetrics;
 import org.apache.hadoop.ozone.container.common.SCMTestUtils;
@@ -135,11 +135,11 @@ public class TestSCMClientProtocolServer {
         new SCMClientProtocolServer(new OzoneConfiguration(),
             mockStorageContainerManager(), mock(ReconfigurationHandler.class));
     try {
-      assertEquals(10, scmServer.listContainer(ScmListContainerRequestCodec.toProto(
-          1, 10, null, null, HddsProtos.ReplicationType.RATIS, null, null, null))
+      assertEquals(10, scmServer.listContainer(ListContainerQuery.newBuilder(1, 10)
+          .setReplicationType(HddsProtos.ReplicationType.RATIS).build())
           .getContainerInfoList().size());
-      assertEquals(10, scmServer.listContainer(ScmListContainerRequestCodec.toProto(
-          1, 10, null, HddsProtos.ReplicationFactor.THREE, null, null, null, null))
+      assertEquals(10, scmServer.listContainer(ListContainerQuery.newBuilder(1, 10)
+          .setFactor(HddsProtos.ReplicationFactor.THREE).build())
           .getContainerInfoList().size());
     } finally {
       scmServer.stop();

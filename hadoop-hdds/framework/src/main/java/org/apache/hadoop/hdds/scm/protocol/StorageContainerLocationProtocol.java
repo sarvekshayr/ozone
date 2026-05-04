@@ -47,6 +47,7 @@ import org.apache.hadoop.hdds.scm.container.ContainerListResult;
 import org.apache.hadoop.hdds.scm.container.ReplicationManagerReport;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
+import org.apache.hadoop.hdds.scm.protocol.ScmListContainerRequestCodec.ListContainerQuery;
 import org.apache.hadoop.ozone.upgrade.UpgradeFinalization.StatusAndMessages;
 import org.apache.hadoop.security.KerberosInfo;
 import org.apache.hadoop.security.token.Token;
@@ -148,13 +149,19 @@ public interface StorageContainerLocationProtocol extends Closeable {
       List<Long> containerIDs);
 
   /**
-   * Lists containers using a single SCM list container request.
+   * Lists containers using decoded list parameters.
    *
-   * @param request start containerID, count and optional filters
-   * @return a list of containers matching the filters.
-   * @throws IOException
+   * @param query start container id, count and optional filters
+   * @return containers matching the query
    */
-  ContainerListResult listContainer(SCMListContainerRequestProto request) throws IOException;
+  ContainerListResult listContainer(ListContainerQuery query) throws IOException;
+  
+  /**
+   * Same as {@link #listContainer(ListContainerQuery)} after decoding {@code request}.
+   */
+  default ContainerListResult listContainer(SCMListContainerRequestProto request) throws IOException {
+    return listContainer(ScmListContainerRequestCodec.fromProto(request));
+  }
 
   /**
    * Deletes a container in SCM.
