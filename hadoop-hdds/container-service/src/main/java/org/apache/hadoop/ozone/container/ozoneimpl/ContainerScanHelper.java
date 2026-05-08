@@ -115,7 +115,14 @@ public final class ContainerScanHelper {
     logScanCompleted(containerData, now);
   }
 
+  /**
+   * Marks container UNHEALTHY when the scan reports real errors.
+   * If every scan error is related to file-descriptor exhaustion, return without marking container unhealthy.
+   */
   public void handleUnhealthyScanResult(ContainerData containerData, ScanResult result) throws IOException {
+    if (ScanTransientIOUtil.scanErrorsAreOnlyTooManyOpenFiles(result)) {
+      return;
+    }
     long containerID = containerData.getContainerID();
     log.error("Corruption detected in container [{}]. Marking it UNHEALTHY. {}", containerID, result);
     if (log.isDebugEnabled()) {
