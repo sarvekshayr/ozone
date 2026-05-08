@@ -25,6 +25,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.util.Map;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdds.HddsUtils;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ratis.util.ExitUtils;
@@ -93,14 +94,19 @@ public abstract class GenericCli implements GenericParentCommand {
     final String rawMessage = error.getMessage();
     if (verbose || rawMessage == null || rawMessage.isEmpty()) {
       error.printStackTrace(cmd.getErr());
-    } else {
-      if (error instanceof FileSystemException) {
-        String errorMessage = handleFileSystemException((FileSystemException) error);
-        cmd.getErr().println(errorMessage);
-      } else {
-        cmd.getErr().println(rawMessage.split("\n")[0]);
-      }
+      return;
     }
+    String aclLine = HddsUtils.formatAccessControlExceptionLine(error);
+    if (aclLine != null) {
+      cmd.getErr().println(aclLine);
+      ExitUtils.terminate(EXECUTION_ERROR_EXIT_CODE, aclLine, null);
+    }
+    if (error instanceof FileSystemException) {
+      String errorMessage = handleFileSystemException((FileSystemException) error);
+      cmd.getErr().println(errorMessage);
+      return;
+    }
+    cmd.getErr().println(rawMessage.split("\n")[0]);
   }
 
   @Override
