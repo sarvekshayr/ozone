@@ -302,18 +302,20 @@ public class TestContainerStateManager {
   }
 
   /**
-   * DELETED EC container in SCM.
+   * DELETED/DELETING EC container in SCM.
    * Expected: Should send force delete to DN
    */
-  @Test
-  public void testDeletedECContainerWithStaleClosedReplicaShouldNotForceDelete()
+  @ParameterizedTest
+  @EnumSource(value = HddsProtos.LifeCycleState.class,
+      names = {"DELETING", "DELETED"})
+  public void testECContainerWithStaleClosedReplicaShouldForceDelete(HddsProtos.LifeCycleState state)
       throws IOException {
     final DatanodeDetails datanode = randomDatanodeDetails();
     nodeManager.register(datanode, null, null);
-    // Create a DELETED EC container
+    // Create an EC container
     ECReplicationConfig repConfig = new ECReplicationConfig(3, 2);
     final ContainerInfo ecContainer = getECContainer(
-        HddsProtos.LifeCycleState.DELETED,
+        state,
         PipelineID.randomId(),
         repConfig);
     containerStateManager.addContainer(ecContainer.getProtobuf());
@@ -322,8 +324,8 @@ public class TestContainerStateManager {
     // Verify delete command sent
     sendReportAndCaptureDeleteCommand(ecContainer, datanode,
         ecContainer.getSequenceId(), false, 1, true);
-    // Container should remain as DELETED
-    verifyContainerState(ecContainer.containerID(), HddsProtos.LifeCycleState.DELETED);
+    // Container should be deleted
+    verifyContainerState(ecContainer.containerID(), state);
   }
 
   private DeleteContainerCommand sendReportAndCaptureDeleteCommand(

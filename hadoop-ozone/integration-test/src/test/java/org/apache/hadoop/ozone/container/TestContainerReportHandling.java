@@ -34,8 +34,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
+import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
@@ -54,7 +57,8 @@ import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.ozone.test.GenericTestUtils;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for container report handling.
@@ -63,32 +67,63 @@ public class TestContainerReportHandling {
   private static final String VOLUME = "vol1";
   private static final String BUCKET = "bucket1";
   private static final String KEY = "key1";
+  
+  private enum ReplicationInput {
+    RATIS(3, RatisReplicationConfig.getInstance(THREE)),
+    EC(5, new ECReplicationConfig(3, 2));
+
+    private final int numDatanodes;
+    private final ReplicationConfig replicationConfig;
+
+    ReplicationInput(int numDatanodes, ReplicationConfig replicationConfig) {
+      this.numDatanodes = numDatanodes;
+      this.replicationConfig = replicationConfig;
+    }
+
+    int getNumDatanodes() {
+      return numDatanodes;
+    }
+
+    ReplicationConfig getReplicationConfig() {
+      return replicationConfig;
+    }
+  }
+
+  private static Stream<Arguments> delStatesAndReplication() {
+    return Stream.of(
+            HddsProtos.LifeCycleState.DELETING,
+            HddsProtos.LifeCycleState.DELETED)
+        .flatMap(state -> Stream.of(
+            Arguments.of(state, ReplicationInput.RATIS),
+            Arguments.of(state, ReplicationInput.EC)));
+  }
 
   /**
    * Tests that a DELETING (or DELETED) container replica gets deleted when replica bcsid <= container bcsid
+   * applicable to RATIS; EC ignores bcsid.
    * To do this, the test first creates a key and closes its corresponding container. Then it moves that container to
    * DELETING (or DELETED) state using ContainerManager. Then it restarts a Datanode hosting that container,
    * making it send a full container report.
-   * Tests wait for a DELETING (or DELETED) container replica gets deleted when replica bcsid <= container bcsid
+   * Tests wait for a DELETING (or DELETED) container replica gets deleted based on the bcsid comparison.
    */
   @ParameterizedTest
-  @EnumSource(value = HddsProtos.LifeCycleState.class,
-      names = {"DELETING", "DELETED"})
+  @MethodSource("delStatesAndReplication")
   void testDeletingOrDeletedContainerWhenNonEmptyReplicaIsReported(
-      HddsProtos.LifeCycleState desiredState)
+      HddsProtos.LifeCycleState desiredState,
+      ReplicationInput replicationInput)
       throws Exception {
     OzoneConfiguration conf = new OzoneConfiguration();
     conf.setTimeDuration(OZONE_SCM_STALENODE_INTERVAL, 3, TimeUnit.SECONDS);
     conf.setTimeDuration(OZONE_SCM_DEADNODE_INTERVAL, 6, TimeUnit.SECONDS);
 
     Path clusterPath = null;
-    try (MiniOzoneCluster cluster = newCluster(conf)) {
+    try (MiniOzoneCluster cluster = newCluster(conf, replicationInput.getNumDatanodes())) {
       cluster.waitForClusterToBeReady();
       clusterPath = Paths.get(cluster.getBaseDir());
 
       try (OzoneClient client = cluster.newClient()) {
         // create a container and close it
-        createTestData(client);
+        createTestData(client, replicationInput.getReplicationConfig());
         List<OmKeyLocationInfo> keyLocations = lookupKey(cluster);
         assertThat(keyLocations).isNotEmpty();
         OmKeyLocationInfo keyLocation = keyLocations.get(0);
@@ -136,10 +171,10 @@ public class TestContainerReportHandling {
     }
   }
 
-  private static MiniOzoneCluster newCluster(OzoneConfiguration conf)
+  private static MiniOzoneCluster newCluster(OzoneConfiguration conf, int numDatanodes)
       throws IOException {
     return MiniOzoneCluster.newBuilder(conf)
-        .setNumDatanodes(3)
+        .setNumDatanodes(numDatanodes)
         .build();
   }
 
@@ -156,7 +191,7 @@ public class TestContainerReportHandling {
     return locations.getLocationList();
   }
 
-  private void createTestData(OzoneClient client) throws IOException {
+  private void createTestData(OzoneClient client, ReplicationConfig replicationConfig) throws IOException {
     ObjectStore objectStore = client.getObjectStore();
     objectStore.createVolume(VOLUME);
     OzoneVolume volume = objectStore.getVolume(VOLUME);
@@ -164,8 +199,7 @@ public class TestContainerReportHandling {
 
     OzoneBucket bucket = volume.getBucket(BUCKET);
 
-    TestDataUtil.createKey(bucket, KEY,
-        RatisReplicationConfig.getInstance(THREE), "Hello".getBytes(UTF_8));
+    TestDataUtil.createKey(bucket, KEY, replicationConfig, "Hello".getBytes(UTF_8));
   }
 
 }
