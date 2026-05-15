@@ -34,6 +34,7 @@ import org.apache.hadoop.hdds.protocol.proto.SCMRatisProtocol.RequestType;
 import org.apache.hadoop.hdds.scm.block.DeletedBlockLogStateManager;
 import org.apache.hadoop.hdds.scm.container.ContainerStateManager;
 import org.apache.hadoop.hdds.scm.ha.SCMRatisRequest;
+import org.apache.hadoop.hdds.scm.ha.SequenceIdGenerator;
 import org.apache.hadoop.hdds.scm.ha.StatefulServiceStateManager;
 import org.apache.hadoop.hdds.scm.metadata.Replicate;
 import org.apache.hadoop.hdds.scm.pipeline.PipelineStateManager;
@@ -57,23 +58,22 @@ public class TestScmCodecFactoryReplicateCoverage {
   private static final Class<?>[] REPLICATE_HANDLER_TYPES =
       replicateHandlerTypes();
 
-  /** Extend when a new SCM component exposes {@link Replicate}-annotated APIs. */
+  /**
+   * Handler types that declare {@link Replicate} methods.
+   * Extend when a new SCM component exposes {@link Replicate}-annotated APIs.
+   */
   private static Class<?>[] replicateHandlerTypes() {
-    try {
-      return new Class<?>[] {
-          ContainerStateManager.class,
-          DeletedBlockLogStateManager.class,
-          PipelineStateManager.class,
-          StatefulServiceStateManager.class,
-          SecretKeyState.class,
-          CertificateStore.class,
-          FinalizationStateManager.class,
-          RootCARotationHandler.class,
-          Class.forName("org.apache.hadoop.hdds.scm.ha.SequenceIdGenerator$StateManager"),
-      };
-    } catch (ClassNotFoundException e) {
-      throw new ExceptionInInitializerError(e);
-    }
+    return new Class<?>[] {
+        CertificateStore.class,
+        ContainerStateManager.class,
+        DeletedBlockLogStateManager.class,
+        FinalizationStateManager.class,
+        PipelineStateManager.class,
+        RootCARotationHandler.class,
+        SecretKeyState.class,
+        SequenceIdGenerator.StateManager.class,
+        StatefulServiceStateManager.class,
+    };
   }
 
   @Test
