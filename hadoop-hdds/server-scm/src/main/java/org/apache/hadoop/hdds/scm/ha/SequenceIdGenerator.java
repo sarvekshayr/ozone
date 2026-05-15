@@ -187,7 +187,7 @@ public class SequenceIdGenerator {
   /**
    * Maintain SequenceIdTable in RocksDB.
    */
-  interface StateManager extends SCMHandler {
+  public interface StateManager extends SCMHandler {
     /**
      * Compare And Swap lastId saved in db from expectedLastId to newLastId.
      * If based on Ratis, it will submit a raft client request.
