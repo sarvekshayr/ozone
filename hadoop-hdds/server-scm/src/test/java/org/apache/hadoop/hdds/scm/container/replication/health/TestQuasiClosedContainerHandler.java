@@ -30,6 +30,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,6 +38,7 @@ import java.util.Set;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.RatisReplicationConfig;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
+import org.apache.hadoop.hdds.protocol.DatanodeID;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
@@ -66,6 +68,7 @@ public class TestQuasiClosedContainerHandler {
         HddsProtos.ReplicationFactor.THREE);
     replicationManager = mock(ReplicationManager.class);
     rmConf = mock(ReplicationManager.ReplicationManagerConfiguration.class);
+    when(replicationManager.getPipelineLeaderId(any())).thenReturn(null);
     quasiClosedContainerHandler =
         new QuasiClosedContainerHandler(replicationManager);
   }
@@ -367,5 +370,75 @@ public class TestQuasiClosedContainerHandler {
         .sendCloseContainerReplicaCommand(eq(containerInfo), eq(dnTwo), anyBoolean());
     verify(replicationManager, times(1))
         .sendCloseContainerReplicaCommand(eq(containerInfo), eq(dnThree), anyBoolean());
+  }
+
+  /**
+   * When unique origin count is below replication factor, force close is allowed
+   * if the last pipeline leader's QUASI_CLOSED replica has the highest BCSID.
+   */
+  @Test
+  public void testQuasiClosedTwoOriginsWithPipelineLeaderForceClose() {
+    final ContainerInfo containerInfo = getContainer(HddsProtos.LifeCycleState.QUASI_CLOSED);
+    final ContainerID id = containerInfo.containerID();
+
+    DatanodeDetails leaderDn = randomDatanodeDetails();
+    DatanodeID leaderOrigin = leaderDn.getID();
+    DatanodeDetails followerOne = randomDatanodeDetails();
+    DatanodeDetails followerTwo = randomDatanodeDetails();
+    DatanodeID followerOrigin = followerOne.getID();
+
+    when(replicationManager.getPipelineLeaderId(containerInfo)).thenReturn(leaderOrigin);
+
+    final ContainerReplica leaderReplica = getReplicas(
+        id, State.QUASI_CLOSED, 12L, leaderOrigin, leaderDn);
+    final ContainerReplica followerReplicaOne = getReplicas(
+        id, State.QUASI_CLOSED, 10L, followerOrigin, followerOne);
+    final ContainerReplica followerReplicaTwo = getReplicas(
+        id, State.QUASI_CLOSED, 10L, followerOrigin, followerTwo);
+    Set<ContainerReplica> containerReplicas = new HashSet<>();
+    containerReplicas.add(leaderReplica);
+    containerReplicas.add(followerReplicaOne);
+    containerReplicas.add(followerReplicaTwo);
+
+    ContainerCheckRequest request = new ContainerCheckRequest.Builder()
+        .setPendingOps(Collections.emptyList())
+        .setReport(new ReplicationManagerReport(rmConf.getContainerSampleLimit()))
+        .setContainerInfo(containerInfo)
+        .setContainerReplicas(containerReplicas)
+        .build();
+
+    assertFalse(quasiClosedContainerHandler.handle(request));
+    verify(replicationManager, times(1))
+        .sendCloseContainerReplicaCommand(eq(containerInfo), eq(leaderDn), anyBoolean());
+    verify(replicationManager, times(0))
+        .sendCloseContainerReplicaCommand(eq(containerInfo), eq(followerOne), anyBoolean());
+    verify(replicationManager, times(0))
+        .sendCloseContainerReplicaCommand(eq(containerInfo), eq(followerTwo), anyBoolean());
+  }
+
+  /**
+   * Pipeline-leader close must not relax the all-same-origin case.
+   */
+  @Test
+  public void testQuasiClosedSameOriginWithPipelineLeaderDoesNotForceClose() {
+    ContainerInfo containerInfo = ReplicationTestUtil.createContainerInfo(
+        ratisReplicationConfig, 1, QUASI_CLOSED);
+    Set<ContainerReplica> containerReplicas = ReplicationTestUtil
+        .createReplicasWithSameOrigin(containerInfo.containerID(), State.QUASI_CLOSED, 0, 0, 0);
+
+    DatanodeID sharedOrigin = containerReplicas.iterator().next().getOriginDatanodeId();
+    when(replicationManager.getPipelineLeaderId(containerInfo)).thenReturn(sharedOrigin);
+
+    ContainerCheckRequest request = new ContainerCheckRequest.Builder()
+        .setPendingOps(Collections.emptyList())
+        .setReport(new ReplicationManagerReport(rmConf.getContainerSampleLimit()))
+        .setContainerInfo(containerInfo)
+        .setContainerReplicas(containerReplicas)
+        .build();
+
+    assertFalse(quasiClosedContainerHandler.handle(request));
+    verify(replicationManager, times(0))
+        .sendCloseContainerReplicaCommand(any(), any(), anyBoolean());
+    assertEquals(1, request.getReport().getStat(ContainerHealthState.QUASI_CLOSED_STUCK));
   }
 }

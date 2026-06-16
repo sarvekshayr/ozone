@@ -27,6 +27,7 @@ import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType.E
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -50,6 +51,7 @@ import org.apache.hadoop.hdds.conf.ConfigurationSource;
 import org.apache.hadoop.hdds.conf.PostConstruct;
 import org.apache.hadoop.hdds.conf.ReconfigurableConfig;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
+import org.apache.hadoop.hdds.protocol.DatanodeID;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ReplicationCommandPriority;
@@ -81,6 +83,7 @@ import org.apache.hadoop.hdds.scm.ha.SCMService;
 import org.apache.hadoop.hdds.scm.node.NodeManager;
 import org.apache.hadoop.hdds.scm.node.NodeStatus;
 import org.apache.hadoop.hdds.scm.node.states.NodeNotFoundException;
+import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
 import org.apache.hadoop.hdds.scm.pipeline.PipelineNotFoundException;
 import org.apache.hadoop.hdds.scm.server.StorageContainerManager;
 import org.apache.hadoop.hdds.server.events.EventPublisher;
@@ -269,7 +272,7 @@ public class ReplicationManager implements SCMService, ContainerReplicaPendingOp
         .addNext(new MismatchedReplicasHandler(this))
         .addNext(new EmptyContainerHandler(this))
         .addNext(new DeletingContainerHandler(this))
-        .addNext(new QuasiClosedStuckReplicationCheck(rmConf))
+        .addNext(new QuasiClosedStuckReplicationCheck(rmConf, this))
         .addNext(ecReplicationCheckHandler)
         .addNext(ratisReplicationCheckHandler)
         .addNext(new ClosedWithUnhealthyReplicasHandler(this))
@@ -759,7 +762,7 @@ public class ReplicationManager implements SCMService, ContainerReplicaPendingOp
       if (isEC) {
         handler = ecUnderReplicationHandler;
       } else {
-        if (QuasiClosedStuckReplicationCheck.shouldHandleAsQuasiClosedStuck(result.getContainerInfo(), replicas)) {
+        if (shouldHandleAsQuasiClosedStuck(result.getContainerInfo(), replicas)) {
           handler = quasiClosedStuckUnderReplicationHandler;
         } else {
           handler = ratisUnderReplicationHandler;
@@ -790,7 +793,7 @@ public class ReplicationManager implements SCMService, ContainerReplicaPendingOp
     if (isEC) {
       handler = ecOverReplicationHandler;
     } else {
-      if (QuasiClosedStuckReplicationCheck.shouldHandleAsQuasiClosedStuck(result.getContainerInfo(), replicas)) {
+      if (shouldHandleAsQuasiClosedStuck(result.getContainerInfo(), replicas)) {
         handler = quasiClosedStuckOverReplicationHandler;
       } else {
         handler = ratisOverReplicationHandler;
@@ -1586,6 +1589,32 @@ public class ReplicationManager implements SCMService, ContainerReplicaPendingOp
           .getPipeline(container.getPipelineID()) != null;
     } catch (PipelineNotFoundException e) {
       return false;
+    }
+  }
+
+  /**
+   * Returns whether a quasi-closed container should be treated as stuck and
+   * delegated to quasi-closed stuck under / over replication handlers.
+   */
+  public boolean shouldHandleAsQuasiClosedStuck(ContainerInfo containerInfo, Set<ContainerReplica> replicas) {
+    return QuasiClosedStuckReplicationCheck.shouldHandleAsQuasiClosedStuck(
+        containerInfo, replicas, getPipelineLeaderId(containerInfo));
+  }
+
+  /**
+   * Returns the last reported leader for the container's origin pipeline, or null if unknown.
+   */
+  @Nullable
+  public DatanodeID getPipelineLeaderId(ContainerInfo container) {
+    if (container == null || container.getPipelineID() == null || scmContext.getScm() == null
+        || scmContext.getScm().getPipelineManager() == null) {
+      return null;
+    }
+    try {
+      Pipeline pipeline = scmContext.getScm().getPipelineManager().getPipeline(container.getPipelineID());
+      return pipeline.getLeaderId();
+    } catch (PipelineNotFoundException e) {
+      return null;
     }
   }
 

@@ -76,16 +76,15 @@ public class RatisReplicationCheckHandler extends AbstractCheck {
 
   @Override
   public boolean handle(ContainerCheckRequest request) {
-    if (request.getContainerInfo().getReplicationType() != RATIS) {
+    ContainerInfo container = request.getContainerInfo();
+    if (container.getReplicationType() != RATIS) {
       // This handler is only for Ratis containers.
       return false;
     }
-    if (QuasiClosedStuckReplicationCheck
-        .shouldHandleAsQuasiClosedStuck(request.getContainerInfo(), request.getContainerReplicas())) {
+    if (replicationManager.shouldHandleAsQuasiClosedStuck(container, request.getContainerReplicas())) {
       return false;
     }
     ReplicationManagerReport report = request.getReport();
-    ContainerInfo container = request.getContainerInfo();
     ContainerHealthResult health = checkHealth(request);
     LOG.debug("Checking container {} in RatisReplicationCheckHandler",
         container);

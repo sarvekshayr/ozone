@@ -17,9 +17,12 @@
 
 package org.apache.hadoop.hdds.scm.container.replication.health;
 
+import jakarta.annotation.Nullable;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.hadoop.hdds.protocol.DatanodeID;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
@@ -69,7 +72,8 @@ public class QuasiClosedContainerHandler extends AbstractCheck {
         containerInfo);
 
     Set<ContainerReplica> replicas = request.getContainerReplicas();
-    if (canForceCloseContainer(containerInfo, replicas)) {
+    DatanodeID pipelineLeaderId = replicationManager.getPipelineLeaderId(containerInfo);
+    if (canForceCloseContainer(containerInfo, replicas, pipelineLeaderId)) {
       if (!request.isReadOnly()) {
         forceCloseContainer(containerInfo, replicas);
       }
@@ -87,11 +91,12 @@ public class QuasiClosedContainerHandler extends AbstractCheck {
    * Returns true if the container is stuck in QUASI_CLOSED state, otherwise false.
    * @param container The container to check
    * @param replicas Set of ContainerReplicas
+   * @param pipelineLeaderId last known pipeline leader, if available
    * @return true if the container is stuck in QUASI_CLOSED state, otherwise false
    */
   public static boolean isQuasiClosedStuck(final ContainerInfo container,
-      final Set<ContainerReplica> replicas) {
-    return !canForceCloseContainer(container, replicas);
+      final Set<ContainerReplica> replicas, @Nullable DatanodeID pipelineLeaderId) {
+    return !canForceCloseContainer(container, replicas, pipelineLeaderId);
   }
 
   /**
@@ -100,29 +105,34 @@ public class QuasiClosedContainerHandler extends AbstractCheck {
    *
    * @param container Container to check
    * @param replicas Set of ContainerReplicas
+   * @param pipelineLeaderId last known pipeline leader, if available
    * @return true if we can force close the container, false otherwise
    */
   private static boolean canForceCloseContainer(final ContainerInfo container,
-      final Set<ContainerReplica> replicas) {
+      final Set<ContainerReplica> replicas, @Nullable DatanodeID pipelineLeaderId) {
     final int replicationFactor =
         container.getReplicationConfig().getRequiredNodes();
 
-    final long uniqueQuasiClosedOrUnhealthyReplicaCount = replicas.stream()
-        .filter(r -> r.getState() == State.QUASI_CLOSED || r.getState() == State.UNHEALTHY)
-        .map(ContainerReplica::getOriginDatanodeId)
-        .distinct()
-        .count();
-
     long maxQCSeq = -1;
     long maxUnhealthySeq = -1;
+    long quasiClosedOrUnhealthyCount = 0;
+    final Set<DatanodeID> quasiClosedOrUnhealthyOrigins = new HashSet<>();
     for (ContainerReplica r : replicas) {
       if (r.getState() == State.QUASI_CLOSED) {
         maxQCSeq = Math.max(maxQCSeq, r.getSequenceId());
+        quasiClosedOrUnhealthyCount++;
+        quasiClosedOrUnhealthyOrigins.add(r.getOriginDatanodeId());
       } else if (r.getState() == State.UNHEALTHY) {
         maxUnhealthySeq = Math.max(maxUnhealthySeq, r.getSequenceId());
+        quasiClosedOrUnhealthyCount++;
+        quasiClosedOrUnhealthyOrigins.add(r.getOriginDatanodeId());
       }
     }
 
+    if (maxQCSeq <= -1 || maxQCSeq < maxUnhealthySeq) {
+      return false;
+    }
+    
     // We can only force close the container if we have seen all the replicas from unique origins.
     // Due to unexpected behavior when writing to ratis containers, it is possible for blocks to be committed
     // on the ratis leader, but not on the followers. A failure on the leader can result in two replicas
@@ -131,8 +141,48 @@ public class QuasiClosedContainerHandler extends AbstractCheck {
     // It is possible to CLOSE a container that has one QC and the remaining UNHEALTHY, provided the QC is one of the
     // replicas with the highest sequence ID. If an UNHEALTHY replica has a higher sequence ID, the container will
     // remain in QUASI_CLOSED state.
-    return maxQCSeq > -1 && maxQCSeq >= maxUnhealthySeq
-        && uniqueQuasiClosedOrUnhealthyReplicaCount >= replicationFactor;
+    final long uniqueQuasiClosedOrUnhealthyReplicaCount = quasiClosedOrUnhealthyOrigins.size();
+    if (uniqueQuasiClosedOrUnhealthyReplicaCount >= replicationFactor) {
+      return true;
+    }
+
+    return canForceCloseWithPipelineLeader(replicas, pipelineLeaderId, replicationFactor, 
+        uniqueQuasiClosedOrUnhealthyReplicaCount, quasiClosedOrUnhealthyCount, maxQCSeq);
+  }
+
+  /**
+   * Allow force close with fewer unique origins when the last pipeline leader's
+   * QUASI_CLOSED replica has the highest BCSID.
+   */
+  private static boolean canForceCloseWithPipelineLeader(Set<ContainerReplica> replicas,
+      @Nullable DatanodeID pipelineLeaderId, int replicationFactor, long uniqueOriginCount,
+      long quasiClosedOrUnhealthyCount, long maxQCSeq) {
+    if (pipelineLeaderId == null) {
+      return false;
+    }
+    if (uniqueOriginCount < 2 || quasiClosedOrUnhealthyCount < replicationFactor) {
+      return false;
+    }
+    return leaderHasQuasiClosedReplicaAtMaxBcsId(replicas, pipelineLeaderId, maxQCSeq);
+  }
+
+  private static boolean leaderHasQuasiClosedReplicaAtMaxBcsId(Set<ContainerReplica> replicas,
+      DatanodeID pipelineLeaderId, long maxQCSeq) {
+    for (ContainerReplica replica : replicas) {
+      if (replica.getState() != State.QUASI_CLOSED) {
+        continue;
+      }
+      if (!pipelineLeaderId.equals(replica.getOriginDatanodeId())) {
+        continue;
+      }
+      if (replica.getSequenceId() == null) {
+        continue;
+      }
+      if (replica.getSequenceId() == maxQCSeq) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

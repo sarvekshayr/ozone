@@ -19,7 +19,9 @@ package org.apache.hadoop.hdds.scm.container.replication.health;
 
 import static org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState.QUASI_CLOSED;
 
+import jakarta.annotation.Nullable;
 import java.util.Set;
+import org.apache.hadoop.hdds.protocol.DatanodeID;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerDatanodeProtocolProtos.ContainerReplicaProto.State;
 import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
@@ -42,16 +44,24 @@ public class QuasiClosedStuckReplicationCheck  extends AbstractCheck {
   private static final Logger LOG = LoggerFactory.getLogger(QuasiClosedStuckReplicationCheck.class);
 
   private final ReplicationManager.ReplicationManagerConfiguration rmConf;
+  private final ReplicationManager replicationManager;
 
   public QuasiClosedStuckReplicationCheck(ReplicationManager.ReplicationManagerConfiguration rmConf) {
-    this.rmConf = rmConf;
+    this(rmConf, null);
   }
 
-  public static boolean shouldHandleAsQuasiClosedStuck(ContainerInfo containerInfo, Set<ContainerReplica> replicas) {
+  public QuasiClosedStuckReplicationCheck(ReplicationManager.ReplicationManagerConfiguration rmConf,
+      ReplicationManager replicationManager) {
+    this.rmConf = rmConf;
+    this.replicationManager = replicationManager;
+  }
+
+  public static boolean shouldHandleAsQuasiClosedStuck(ContainerInfo containerInfo, Set<ContainerReplica> replicas,
+      @Nullable DatanodeID pipelineLeaderId) {
     if (containerInfo.getState() != QUASI_CLOSED) {
       return false;
     }
-    if (!QuasiClosedContainerHandler.isQuasiClosedStuck(containerInfo, replicas)) {
+    if (!QuasiClosedContainerHandler.isQuasiClosedStuck(containerInfo, replicas, pipelineLeaderId)) {
       return false;
     }
     QuasiClosedStuckReplicaCount replicaCount = new QuasiClosedStuckReplicaCount(replicas, 0, 3, 2);
@@ -67,7 +77,11 @@ public class QuasiClosedStuckReplicationCheck  extends AbstractCheck {
 
   @Override
   public boolean handle(ContainerCheckRequest request) {
-    if (!shouldHandleAsQuasiClosedStuck(request.getContainerInfo(), request.getContainerReplicas())) {
+    DatanodeID pipelineLeaderId = null;
+    if (replicationManager != null) {
+      pipelineLeaderId = replicationManager.getPipelineLeaderId(request.getContainerInfo());
+    }
+    if (!shouldHandleAsQuasiClosedStuck(request.getContainerInfo(), request.getContainerReplicas(), pipelineLeaderId)) {
       return false;
     }
 
