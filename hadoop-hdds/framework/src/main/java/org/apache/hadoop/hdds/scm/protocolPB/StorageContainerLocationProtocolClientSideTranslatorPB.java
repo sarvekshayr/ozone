@@ -1289,7 +1289,9 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
     builder.setCount(count);
     builder.setTraceID(TracingUtil.exportCurrentSpan());
     builder.setState(state);
-    builder.setHealthState(healthState.name());
+    if (healthState != null) {
+      builder.setHealthState(healthState.name());
+    }
 
     SCMListContainerIDsRequestProto request = builder.build();
 
