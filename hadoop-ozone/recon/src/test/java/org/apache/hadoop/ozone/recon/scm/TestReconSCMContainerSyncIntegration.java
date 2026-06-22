@@ -85,7 +85,7 @@ import org.junit.jupiter.api.Timeout;
  * </ul>
  */
 @Timeout(120)
-public class TestReconSCMContainerSyncIntegrationgi
+public class TestReconSCMContainerSyncIntegration
     extends AbstractReconContainerManagerTest {
 
   private StorageContainerServiceProvider mockScm;

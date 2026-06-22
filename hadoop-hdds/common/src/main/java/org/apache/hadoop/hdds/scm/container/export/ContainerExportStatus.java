@@ -22,15 +22,6 @@ package org.apache.hadoop.hdds.scm.container.export;
  */
 public final class ContainerExportStatus {
 
-  /**
-   * States of export job.
-   */
-  public enum State {
-    RUNNING,
-    SUCCEEDED,
-    FAILED
-  }
-
   private final String jobId;
   private final State state;
   private final long totalRows;
@@ -40,6 +31,15 @@ public final class ContainerExportStatus {
   private final String healthState;
   private final String lifecycleState;
   private final String exportDir;
+
+  /**
+   * States of export job.
+   */
+  public enum State {
+    RUNNING,
+    SUCCEEDED,
+    FAILED
+  }
 
   @SuppressWarnings("checkstyle:ParameterNumber")
   public ContainerExportStatus(String jobId, State state, long totalRows,

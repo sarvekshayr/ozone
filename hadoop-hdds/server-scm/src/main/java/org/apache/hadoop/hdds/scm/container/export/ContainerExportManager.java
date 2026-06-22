@@ -274,13 +274,13 @@ public class ContainerExportManager {
     } catch (InterruptedException e) {
       job.setState(ContainerExportStatus.State.FAILED);
       job.setErrorMessage("Job was cancelled");
-      cleanupFailedArtifacts(workDir, tarFile);
+      cleanupFailedArtifacts(jobDir, tarFile);
       LOG.info("Export job {} was cancelled", job.getJobId());
       Thread.currentThread().interrupt();
     } catch (IOException | RuntimeException e) {
       job.setState(ContainerExportStatus.State.FAILED);
       job.setErrorMessage(e.getMessage() != null ? e.getMessage() : e.toString());
-      cleanupFailedArtifacts(workDir, tarFile);
+      cleanupFailedArtifacts(jobDir, tarFile);
       LOG.error("Export job {} failed", job.getJobId(), e);
     } finally {
       runningTasks.remove(job.getJobId());
@@ -303,12 +303,9 @@ public class ContainerExportManager {
   }
 
   /** Remove partial work artifacts after a failed or cancelled export. */
-  private void cleanupFailedArtifacts(Path workDir, File tarFile) {
-    if (workDir != null) {
-      FileUtils.deleteQuietly(workDir.toFile());
-      if (workDir.getParent() != null) {
-        FileUtils.deleteQuietly(workDir.getParent().toFile());
-      }
+  private void cleanupFailedArtifacts(Path jobDir, File tarFile) {
+    if (jobDir != null) {
+      FileUtils.deleteQuietly(jobDir.toFile());
     }
     if (tarFile != null) {
       FileUtils.deleteQuietly(tarFile);
