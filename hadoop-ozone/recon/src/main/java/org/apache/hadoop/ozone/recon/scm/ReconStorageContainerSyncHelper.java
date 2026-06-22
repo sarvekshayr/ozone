@@ -198,7 +198,7 @@ class ReconStorageContainerSyncHelper {
           scmState, total, batchSize, initialStart);
       while (true) {
         List<ContainerID> batch = scmServiceProvider.getListOfContainerIDs(
-            startContainerId, batchSize, scmState);
+            startContainerId, batchSize, scmState, null);
         if (batch == null || batch.isEmpty()) {
           break;
         }
@@ -404,7 +404,7 @@ class ReconStorageContainerSyncHelper {
       ContainerID start = ContainerID.valueOf(1);
       while (true) {
         List<ContainerID> page = scmServiceProvider.getListOfContainerIDs(
-            start, batchSize, HddsProtos.LifeCycleState.DELETED);
+            start, batchSize, HddsProtos.LifeCycleState.DELETED, null);
         if (page == null || page.isEmpty()) {
           break;
         }

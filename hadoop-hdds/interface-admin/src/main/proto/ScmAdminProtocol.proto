@@ -89,6 +89,8 @@ message ScmContainerLocationRequest {
   optional GetDeletedBlocksTxnSummaryRequestProto getDeletedBlocksTxnSummaryRequest = 50;
   optional SCMListContainerIDsRequestProto scmListContainerIDsRequest = 51;
   optional SuppressContainerRequestProto suppressContainerRequest = 52;
+  optional SubmitContainerIdExportRequestProto submitContainerIdExportRequest = 53;
+  optional GetContainerIdExportStatusRequestProto getContainerIdExportStatusRequest = 54;
 }
 
 message ScmContainerLocationResponse {
@@ -149,6 +151,8 @@ message ScmContainerLocationResponse {
   optional GetDeletedBlocksTxnSummaryResponseProto getDeletedBlocksTxnSummaryResponse = 50;
   optional SCMListContainerIDsResponseProto scmListContainerIDsResponse = 51;
   optional SuppressContainerResponseProto suppressContainerResponse = 52;
+  optional SubmitContainerIdExportResponseProto submitContainerIdExportResponse = 53;
+  optional GetContainerIdExportStatusResponseProto getContainerIdExportStatusResponse = 54;
 
   enum Status {
     OK = 1;
@@ -208,6 +212,8 @@ enum Type {
   GetDeletedBlocksTransactionSummary = 46;
   ListContainerIDs = 47;
   SuppressContainer = 48;
+  SubmitContainerIdExport = 49;
+  GetContainerIdExportStatus = 50;
 }
 
 /**
@@ -302,6 +308,7 @@ message SCMListContainerIDsRequestProto {
   optional ContainerID startContainerID = 2;
   optional LifeCycleState state = 3;
   optional string traceID = 4;
+  optional string healthState = 5;
 }
 
 message SCMListContainerIDsResponseProto {
@@ -724,6 +731,40 @@ message SuppressContainerRequestProto {
 message SuppressContainerResponseProto {
   // Container IDs that failed to suppress or unsuppress. Empty if all succeeded.
   repeated int64 failedContainerIDs = 1;
+}
+
+enum ContainerExportStateProto {
+  RUNNING = 1;
+  SUCCEEDED = 2;
+  FAILED = 3;
+}
+
+message SubmitContainerIdExportRequestProto {
+  optional ContainerID startContainerID = 1;
+  optional LifeCycleState lifecycleState = 2;
+  optional string healthState = 3;
+  optional int64 maxRows = 4;
+  optional int32 pageSize = 5;
+  optional int32 shardSize = 6;
+}
+
+message SubmitContainerIdExportResponseProto {
+  optional string jobId = 1;
+}
+
+message GetContainerIdExportStatusRequestProto {
+  required string jobId = 1;
+}
+
+message GetContainerIdExportStatusResponseProto {
+  optional string jobId = 1;
+  optional ContainerExportStateProto state = 2;
+  optional LifeCycleState lifecycleState = 3;
+  optional string healthState = 4;
+  optional int64 totalRows = 5;
+  optional int64 elapsedMs = 6;
+  optional string tarPath = 7;
+  optional string errorMessage = 8;
 }
 
 /**

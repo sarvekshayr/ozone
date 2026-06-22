@@ -71,7 +71,8 @@ public enum SCMAction implements AuditAction {
   GET_DELETED_BLOCK_SUMMARY,
   LIST_CONTAINER_IDS,
   SUPPRESS_CONTAINER,
-  UNSUPPRESS_CONTAINER;
+  UNSUPPRESS_CONTAINER,
+  EXPORT_CONTAINER_IDS;
 
   @Override
   public String getAction() {

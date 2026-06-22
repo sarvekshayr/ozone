@@ -73,6 +73,7 @@ import org.apache.hadoop.hdds.ratis.RatisHelper;
 import org.apache.hadoop.hdds.scm.DatanodeAdminError;
 import org.apache.hadoop.hdds.scm.FetchMetrics;
 import org.apache.hadoop.hdds.scm.ScmInfo;
+import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerListResult;
@@ -85,6 +86,7 @@ import org.apache.hadoop.hdds.scm.container.balancer.ContainerBalancerStatusInfo
 import org.apache.hadoop.hdds.scm.container.balancer.IllegalContainerBalancerStateException;
 import org.apache.hadoop.hdds.scm.container.balancer.InvalidContainerBalancerConfigurationException;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
+import org.apache.hadoop.hdds.scm.container.export.ContainerExportStatus;
 import org.apache.hadoop.hdds.scm.container.reconciliation.ReconciliationEligibilityHandler;
 import org.apache.hadoop.hdds.scm.container.reconciliation.ReconciliationEligibilityHandler.EligibilityResult;
 import org.apache.hadoop.hdds.scm.events.SCMEvents;
@@ -1573,16 +1575,17 @@ public class SCMClientProtocolServer implements
 
   @Override
   public List<ContainerID> getListOfContainerIDs(
-      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state)
+      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state, ContainerHealthState healthState)
       throws IOException {
 
     final Map<String, String> auditMap = Maps.newHashMap();
     auditMap.put("startContainerID", String.valueOf(startContainerID));
     auditMap.put("count", String.valueOf(count));
     auditMap.put("state", String.valueOf(state));
+    auditMap.put("healthState", String.valueOf(healthState));
     try {
       List<ContainerID> results = scm.getContainerManager().getContainerIDs(
-          startContainerID, count, state);
+          startContainerID, count, state, healthState);
       AUDIT.logReadSuccess(buildAuditMessageForSuccess(
           SCMAction.LIST_CONTAINER_IDS, auditMap));
       return results;
@@ -1767,6 +1770,47 @@ public class SCMClientProtocolServer implements
       }
     }
     return failedContainerIDs;
+  }
+
+  @Override
+  public String submitContainerIdExport(ContainerID startContainerId,
+      HddsProtos.LifeCycleState lifecycleState, ContainerHealthState healthState,
+      long maxRows, int pageSize, int shardSize) throws IOException {
+    getScm().checkAdminAccess(getRemoteUser(), false);
+    final Map<String, String> auditMap = Maps.newHashMap();
+    auditMap.put("startContainerID", String.valueOf(startContainerId));
+    auditMap.put("lifecycleState", String.valueOf(lifecycleState));
+    auditMap.put("healthState", String.valueOf(healthState));
+    auditMap.put("maxRows", String.valueOf(maxRows));
+    auditMap.put("pageSize", String.valueOf(pageSize));
+    auditMap.put("shardSize", String.valueOf(shardSize));
+    try {
+      String jobId = scm.getContainerExportManager().submitJob(
+          startContainerId, lifecycleState, healthState, maxRows, pageSize, shardSize);
+      auditMap.put("jobId", jobId);
+      AUDIT.logWriteSuccess(buildAuditMessageForSuccess(
+          SCMAction.EXPORT_CONTAINER_IDS, auditMap));
+      return jobId;
+    } catch (IllegalStateException | IllegalArgumentException ex) {
+      AUDIT.logWriteFailure(buildAuditMessageForFailure(
+          SCMAction.EXPORT_CONTAINER_IDS, auditMap, ex));
+      throw new IOException(ex.getMessage(), ex);
+    } catch (Exception ex) {
+      AUDIT.logWriteFailure(buildAuditMessageForFailure(
+          SCMAction.EXPORT_CONTAINER_IDS, auditMap, ex));
+      throw ex;
+    }
+  }
+
+  @Override
+  public ContainerExportStatus getContainerIdExportStatus(String jobId)
+      throws IOException {
+    getScm().checkAdminAccess(getRemoteUser(), false);
+    ContainerExportStatus status = scm.getContainerExportManager().getJobStatus(jobId);
+    if (status == null) {
+      throw new IOException("Export job not found: " + jobId);
+    }
+    return status;
   }
 
   private void persistContainerSuppression(long longContainerID, boolean suppress, SCMAction action)
