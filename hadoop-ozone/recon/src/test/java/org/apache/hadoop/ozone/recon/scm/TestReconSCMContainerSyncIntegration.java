@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -84,7 +85,7 @@ import org.junit.jupiter.api.Timeout;
  * </ul>
  */
 @Timeout(120)
-public class TestReconSCMContainerSyncIntegration
+public class TestReconSCMContainerSyncIntegrationgi
     extends AbstractReconContainerManagerTest {
 
   private StorageContainerServiceProvider mockScm;
@@ -192,7 +193,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
       when(mockScm.getExistContainerWithPipelinesInBatch(Collections.singletonList(1L)))
           .thenReturn(Collections.singletonList(cwp));
@@ -209,7 +210,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -225,7 +226,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -240,7 +241,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -258,7 +259,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -272,7 +273,7 @@ public class TestReconSCMContainerSyncIntegration
       // transient SCM error; sync should return false (partial).
       when(mockScm.getContainerCount(CLOSED)).thenReturn(2L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(2), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(2), eq(CLOSED), isNull()))
           .thenReturn(Collections.emptyList());
 
       boolean result = syncHelper.syncWithSCMContainerInfo();
@@ -292,15 +293,15 @@ public class TestReconSCMContainerSyncIntegration
       when(mockScm.getContainerCount(CLOSED)).thenReturn(7L);
       // Page 1: IDs 1-3
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(3), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(3), eq(CLOSED), isNull()))
           .thenReturn(idRange(1, 4));
       // Page 2: IDs 4-6
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(4L)), eq(3), eq(CLOSED)))
+          eq(ContainerID.valueOf(4L)), eq(3), eq(CLOSED), isNull()))
           .thenReturn(idRange(4, 7));
       // Page 3: ID 7
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(7L)), eq(3), eq(CLOSED)))
+          eq(ContainerID.valueOf(7L)), eq(3), eq(CLOSED), isNull()))
           .thenReturn(idRange(7, 8));
 
       when(mockScm.getExistContainerWithPipelinesInBatch(anyList())).thenAnswer(inv -> {
@@ -324,7 +325,7 @@ public class TestReconSCMContainerSyncIntegration
       List<ContainerID> scmClosed = idRange(1, 6); // 1,2,3,4,5
       when(mockScm.getContainerCount(CLOSED)).thenReturn(5L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(5), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(5), eq(CLOSED), isNull()))
           .thenReturn(scmClosed);
       when(mockScm.getExistContainerWithPipelinesInBatch(anyList())).thenAnswer(inv -> {
         List<Long> idList = inv.getArgument(0);
@@ -357,7 +358,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(OPEN)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN), isNull()))
           .thenReturn(Collections.singletonList(cid));
       when(mockScm.getExistContainerWithPipelinesInBatch(Collections.singletonList(10L)))
           .thenReturn(Collections.singletonList(cwp));
@@ -373,7 +374,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(OPEN)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -389,7 +390,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(OPEN)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -405,7 +406,7 @@ public class TestReconSCMContainerSyncIntegration
       ContainerID cid = ContainerID.valueOf(20L);
       when(mockScm.getContainerCount(OPEN)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(OPEN), isNull()))
           .thenReturn(Collections.singletonList(cid));
       // null pipeline — simulates cleaned-up pipeline; batch API returns it with null pipeline
       when(mockScm.getExistContainerWithPipelinesInBatch(Collections.singletonList(20L)))
@@ -424,16 +425,16 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(OPEN)).thenReturn(2L, 1L, 0L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(2), eq(OPEN)))
+          eq(ContainerID.valueOf(1L)), eq(2), eq(OPEN), isNull()))
           .thenReturn(idRange(10, 12));
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(12L)), eq(2), eq(OPEN)))
+          eq(ContainerID.valueOf(12L)), eq(2), eq(OPEN), isNull()))
           .thenReturn(Collections.emptyList());
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(12L)), eq(1), eq(OPEN)))
+          eq(ContainerID.valueOf(12L)), eq(1), eq(OPEN), isNull()))
           .thenReturn(Collections.singletonList(ContainerID.valueOf(20L)));
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(21L)), eq(2), eq(OPEN)))
+          eq(ContainerID.valueOf(21L)), eq(2), eq(OPEN), isNull()))
           .thenReturn(Collections.emptyList());
       when(mockScm.getExistContainerWithPipelinesInBatch(Arrays.asList(10L, 11L)))
           .thenReturn(Arrays.asList(containerCwp(10L, OPEN), containerCwp(11L, OPEN)));
@@ -447,7 +448,7 @@ public class TestReconSCMContainerSyncIntegration
       assertEquals(3, getContainerManager().getContainers(OPEN).size());
 
       verify(mockScm, times(1)).getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(2), eq(OPEN));
+          eq(ContainerID.valueOf(1L)), eq(2), eq(OPEN), isNull());
     }
   }
 
@@ -471,7 +472,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
       when(mockScm.getExistContainerWithPipelinesInBatch(Collections.singletonList(30L)))
           .thenReturn(Collections.singletonList(cwp));
@@ -487,7 +488,7 @@ public class TestReconSCMContainerSyncIntegration
       ContainerID cid = ContainerID.valueOf(31L);
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
       when(mockScm.getExistContainerWithPipelinesInBatch(Collections.singletonList(31L)))
           .thenReturn(Collections.singletonList(containerCwp(31L, QUASI_CLOSED)));
@@ -503,7 +504,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -519,7 +520,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -535,7 +536,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -551,7 +552,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(1L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(1), eq(QUASI_CLOSED), isNull()))
           .thenReturn(Collections.singletonList(cid));
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -581,12 +582,12 @@ public class TestReconSCMContainerSyncIntegration
           .collect(Collectors.toList());
       // First page returns the list; cursor beyond the last ID returns empty.
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(ids);
       long nextCursor = page.isEmpty() ? 1L
           : page.get(page.size() - 1).getContainerID() + 1;
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(nextCursor)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(nextCursor)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
       for (ContainerInfo info : page) {
         when(mockScm.getListOfContainerInfos(
@@ -642,7 +643,7 @@ public class TestReconSCMContainerSyncIntegration
       ContainerID cid = ContainerID.valueOf(103L);
 
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -657,10 +658,10 @@ public class TestReconSCMContainerSyncIntegration
 
       List<ContainerID> deleted = idRange(200, 205);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(deleted);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(205L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(205L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -675,7 +676,7 @@ public class TestReconSCMContainerSyncIntegration
 
       // DELETED list is empty for these containers
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -695,10 +696,10 @@ public class TestReconSCMContainerSyncIntegration
       // SCM's DELETED list page 1 (IDs 400-402), then empty.
       List<ContainerID> firstPage = idRange(400, 403);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(3), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), eq(3), eq(DELETED), isNull()))
           .thenReturn(firstPage);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(403L)), eq(3), eq(DELETED)))
+          eq(ContainerID.valueOf(403L)), eq(3), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
 
       assertTrue(batchHelper.syncWithSCMContainerInfo());
@@ -721,10 +722,10 @@ public class TestReconSCMContainerSyncIntegration
           ContainerID.valueOf(502L),
           missingDeleted.containerID());  // 503 absent from Recon
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(deletedList);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(504L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(504L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
       when(mockScm.getListOfContainerInfos(
           eq(ContainerID.valueOf(503L)), eq(1), eq(DELETED)))
@@ -771,7 +772,7 @@ public class TestReconSCMContainerSyncIntegration
       // Default Pass 4 mock: SCM's DELETED list is empty → no retirements.
       // Tests that need Pass 4 retirement override this inline.
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
     }
 
@@ -783,7 +784,7 @@ public class TestReconSCMContainerSyncIntegration
 
       when(mockScm.getContainerCount(CLOSED)).thenReturn((long) LARGE_COUNT);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(LARGE_COUNT), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(LARGE_COUNT), eq(CLOSED), isNull()))
           .thenReturn(ids);
       // Pass 1 add-missing path now uses getExistContainerWithPipelinesInBatch.
       // The @BeforeEach default mock already returns CLOSED for any asked IDs.
@@ -805,7 +806,7 @@ public class TestReconSCMContainerSyncIntegration
       List<ContainerID> ids = idRange(1, LARGE_COUNT + 1);
       when(mockScm.getContainerCount(CLOSED)).thenReturn((long) LARGE_COUNT);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(LARGE_COUNT), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(LARGE_COUNT), eq(CLOSED), isNull()))
           .thenReturn(ids);
       when(mockScm.getContainerCount(OPEN)).thenReturn(0L);
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(0L);
@@ -824,7 +825,7 @@ public class TestReconSCMContainerSyncIntegration
       List<ContainerID> ids = idRange(1, LARGE_COUNT + 1);
       when(mockScm.getContainerCount(CLOSED)).thenReturn((long) LARGE_COUNT);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(LARGE_COUNT), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(LARGE_COUNT), eq(CLOSED), isNull()))
           .thenReturn(ids);
       when(mockScm.getContainerCount(OPEN)).thenReturn(0L);
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(0L);
@@ -846,10 +847,10 @@ public class TestReconSCMContainerSyncIntegration
       // Override Pass 4: SCM's DELETED list contains all 100k containers.
       List<ContainerID> deletedPage = idRange(1, LARGE_COUNT + 1);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(deletedPage);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf((long) LARGE_COUNT + 1)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf((long) LARGE_COUNT + 1)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -868,10 +869,10 @@ public class TestReconSCMContainerSyncIntegration
       // Override Pass 4: SCM's DELETED list contains all 100k containers.
       List<ContainerID> deletedPage = idRange(1, LARGE_COUNT + 1);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(deletedPage);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf((long) LARGE_COUNT + 1)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf((long) LARGE_COUNT + 1)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
 
       assertTrue(syncHelper.syncWithSCMContainerInfo());
@@ -919,21 +920,21 @@ public class TestReconSCMContainerSyncIntegration
       List<ContainerID> closedIds = idRange(1, 50_001);
       when(mockScm.getContainerCount(CLOSED)).thenReturn(50_000L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(50_000), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(50_000), eq(CLOSED), isNull()))
           .thenReturn(closedIds);
 
       // Pass 2 — OPEN list: IDs 50001-70000
       List<ContainerID> openIds = idRange(50_001, 70_001);
       when(mockScm.getContainerCount(OPEN)).thenReturn(20_000L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(20_000), eq(OPEN)))
+          eq(ContainerID.valueOf(1L)), eq(20_000), eq(OPEN), isNull()))
           .thenReturn(openIds);
 
       // Pass 3 — QUASI_CLOSED list: IDs 70001-80000
       List<ContainerID> qcIds = idRange(70_001, 80_001);
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn(10_000L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(10_000), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(10_000), eq(QUASI_CLOSED), isNull()))
           .thenReturn(qcIds);
 
       // Pass 1/2/3 add mock: getExistContainerWithPipelinesInBatch returns the
@@ -956,10 +957,10 @@ public class TestReconSCMContainerSyncIntegration
       // Pass 4 mock: SCM's DELETED list contains containers 80001-100000.
       List<ContainerID> deletedPage = idRange(80_001, 100_001);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(deletedPage);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(100_001L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(100_001L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
       when(mockScm.getListOfContainerInfos(
           eq(ContainerID.valueOf(100_000L)), eq(1), eq(DELETED)))
@@ -1000,7 +1001,7 @@ public class TestReconSCMContainerSyncIntegration
       List<ContainerID> closedIds = idRange(1, 10_001);
       when(mockScm.getContainerCount(CLOSED)).thenReturn(10_000L);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(10_000), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(10_000), eq(CLOSED), isNull()))
           .thenReturn(closedIds);
       // Default @BeforeEach mock for getExistContainerWithPipelinesInBatch already returns
       // CLOSED for any IDs — covers both the Pass 1 add path and Pass 4 retirement check.
@@ -1057,21 +1058,21 @@ public class TestReconSCMContainerSyncIntegration
       List<ContainerID> closedIds = idRange(base, cEnd);
       when(mockScm.getContainerCount(CLOSED)).thenReturn((long) closedIds.size());
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(closedIds.size()), eq(CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(closedIds.size()), eq(CLOSED), isNull()))
           .thenReturn(closedIds);
 
       // Pass 2 — OPEN list: group D
       List<ContainerID> openIds = idRange(bEnd, dEnd);
       when(mockScm.getContainerCount(OPEN)).thenReturn((long) openIds.size());
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(openIds.size()), eq(OPEN)))
+          eq(ContainerID.valueOf(1L)), eq(openIds.size()), eq(OPEN), isNull()))
           .thenReturn(openIds);
 
       // Pass 3 — QUASI_CLOSED list: group E
       List<ContainerID> qcIds = idRange(dEnd, eEnd);
       when(mockScm.getContainerCount(QUASI_CLOSED)).thenReturn((long) qcIds.size());
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), eq(qcIds.size()), eq(QUASI_CLOSED)))
+          eq(ContainerID.valueOf(1L)), eq(qcIds.size()), eq(QUASI_CLOSED), isNull()))
           .thenReturn(qcIds);
 
       // Pass 1/2/3 add mock: returns correct live states for absent containers.
@@ -1097,10 +1098,10 @@ public class TestReconSCMContainerSyncIntegration
       deletedPage.addAll(idRange(fEnd, gEnd)); // G
       deletedPage.addAll(idRange(gEnd, hEnd)); // H
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(1L)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(deletedPage);
       when(mockScm.getListOfContainerIDs(
-          eq(ContainerID.valueOf(hEnd)), anyInt(), eq(DELETED)))
+          eq(ContainerID.valueOf(hEnd)), anyInt(), eq(DELETED), isNull()))
           .thenReturn(Collections.emptyList());
       when(mockScm.getListOfContainerInfos(
           any(ContainerID.class), eq(1), eq(DELETED)))

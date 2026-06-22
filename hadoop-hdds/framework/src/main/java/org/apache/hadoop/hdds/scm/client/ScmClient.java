@@ -34,12 +34,14 @@ import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolPro
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.DecommissionScmResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.StartContainerBalancerResponseProto;
 import org.apache.hadoop.hdds.scm.DatanodeAdminError;
+import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerListResult;
 import org.apache.hadoop.hdds.scm.container.ContainerReplicaInfo;
 import org.apache.hadoop.hdds.scm.container.ReplicationManagerReport;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
+import org.apache.hadoop.hdds.scm.container.export.ContainerExportStatus;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
 import org.apache.hadoop.ozone.upgrade.UpgradeFinalization.StatusAndMessages;
 
@@ -494,4 +496,15 @@ public interface ScmClient extends Closeable {
    * @throws IOException
    */
   List<Long> suppressContainers(List<Long> containerIds, boolean suppress) throws IOException;
+
+  /**
+   * Submit an async container ID export job on SCM leader.
+   */
+  String submitContainerIdExport(ContainerID startContainerId, HddsProtos.LifeCycleState lifecycleState, 
+      ContainerHealthState healthState, long maxRows) throws IOException;
+
+  /**
+   * Get status of a container ID export job.
+   */
+  ContainerExportStatus getContainerIdExportStatus(String jobId) throws IOException;
 }

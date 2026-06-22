@@ -35,6 +35,7 @@ import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.protocolPB.SCMSecurityProtocolClientSideTranslatorPB;
 import org.apache.hadoop.hdds.scm.ScmConfigKeys;
+import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
@@ -187,9 +188,9 @@ public class StorageContainerServiceProviderImpl
 
   @Override
   public List<ContainerID> getListOfContainerIDs(
-      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state)
+      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state, ContainerHealthState healthState)
       throws IOException {
-    return scmClient.getListOfContainerIDs(startContainerID, count, state);
+    return scmClient.getListOfContainerIDs(startContainerID, count, state, healthState);
   }
 
   /**

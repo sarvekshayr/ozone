@@ -90,6 +90,7 @@ import org.apache.hadoop.hdds.scm.container.ContainerReportHandler;
 import org.apache.hadoop.hdds.scm.container.IncrementalContainerReportHandler;
 import org.apache.hadoop.hdds.scm.container.balancer.ContainerBalancer;
 import org.apache.hadoop.hdds.scm.container.balancer.MoveManager;
+import org.apache.hadoop.hdds.scm.container.export.ContainerExportManager;
 import org.apache.hadoop.hdds.scm.container.placement.algorithms.ContainerPlacementPolicyFactory;
 import org.apache.hadoop.hdds.scm.container.placement.algorithms.SCMContainerPlacementMetrics;
 import org.apache.hadoop.hdds.scm.container.placement.metrics.SCMMetrics;
@@ -280,6 +281,8 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
   private ObjectName scmInfoBeanName;
 
   private ReplicationManager replicationManager;
+
+  private ContainerExportManager containerExportManager;
 
   private SCMSafeModeManager scmSafeModeManager;
   private SCMCertificateClient scmCertificateClient;
@@ -870,6 +873,7 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
     // RM gets notified of expired pending delete from containerReplicaPendingOps by subscribing to it
     // so it can resend them.
     containerReplicaPendingOps.registerSubscriber(replicationManager);
+    containerExportManager = new ContainerExportManager(containerManager, conf);
     if (configurator.getScmSafeModeManager() != null) {
       scmSafeModeManager = configurator.getScmSafeModeManager();
     } else {
@@ -1669,6 +1673,10 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
 
     stopReplicationManager();
 
+    if (containerExportManager != null) {
+      containerExportManager.shutdown();
+    }
+
     try {
       LOG.info("Stopping the Datanode Admin Monitor.");
       scmDecommissionManager.stop();
@@ -1918,6 +1926,10 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
   @Override
   public ReplicationManager getReplicationManager() {
     return replicationManager;
+  }
+
+  public ContainerExportManager getContainerExportManager() {
+    return containerExportManager;
   }
 
   public PlacementPolicy getContainerPlacementPolicy() {

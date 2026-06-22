@@ -74,6 +74,8 @@ import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolPro
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.ForceExitSafeModeResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.GetContainerCountRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.GetContainerCountResponseProto;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.GetContainerIdExportStatusRequestProto;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.GetContainerIdExportStatusResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.GetContainerReplicasRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.GetContainerRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.GetContainerTokenRequestProto;
@@ -127,16 +129,20 @@ import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolPro
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.StartReplicationManagerRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.StopContainerBalancerRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.StopReplicationManagerRequestProto;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SubmitContainerIdExportRequestProto;
+import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SubmitContainerIdExportResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SuppressContainerRequestProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.SuppressContainerResponseProto;
 import org.apache.hadoop.hdds.protocol.proto.StorageContainerLocationProtocolProtos.Type;
 import org.apache.hadoop.hdds.scm.DatanodeAdminError;
 import org.apache.hadoop.hdds.scm.ScmInfo;
+import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerListResult;
 import org.apache.hadoop.hdds.scm.container.ReplicationManagerReport;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
+import org.apache.hadoop.hdds.scm.container.export.ContainerExportStatus;
 import org.apache.hadoop.hdds.scm.pipeline.Pipeline;
 import org.apache.hadoop.hdds.scm.protocol.StorageContainerLocationProtocol;
 import org.apache.hadoop.hdds.scm.proxy.SCMContainerLocationFailoverProxyProvider;
@@ -1271,7 +1277,7 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
 
   @Override
   public List<ContainerID> getListOfContainerIDs(
-      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state)
+      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state, ContainerHealthState healthState)
       throws IOException {
     Preconditions.checkState(startContainerID.getId() >= 0,
         "Container ID cannot be negative.");
@@ -1283,6 +1289,7 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
     builder.setCount(count);
     builder.setTraceID(TracingUtil.exportCurrentSpan());
     builder.setState(state);
+    builder.setHealthState(healthState.name());
 
     SCMListContainerIDsRequestProto request = builder.build();
 
@@ -1340,6 +1347,70 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
         submitRequest(Type.SuppressContainer, builder -> builder.setSuppressContainerRequest(request))
             .getSuppressContainerResponse();
     return response.getFailedContainerIDsList();
+  }
+
+  @Override
+  public String submitContainerIdExport(ContainerID startContainerId, HddsProtos.LifeCycleState lifecycleState, 
+      ContainerHealthState healthState, long maxRows) throws IOException {
+    SubmitContainerIdExportRequestProto.Builder builder = SubmitContainerIdExportRequestProto.newBuilder();
+    if (startContainerId != null) {
+      builder.setStartContainerID(startContainerId.getProtobuf());
+    }
+    if (lifecycleState != null) {
+      builder.setLifecycleState(lifecycleState);
+    }
+    if (healthState != null) {
+      builder.setHealthState(healthState.name());
+    }
+    if (maxRows > 0) {
+      builder.setMaxRows(maxRows);
+    }
+    SubmitContainerIdExportResponseProto response = submitRequest(
+        Type.SubmitContainerIdExport,
+        req -> req.setSubmitContainerIdExportRequest(builder.build()))
+        .getSubmitContainerIdExportResponse();
+    return response.getJobId();
+  }
+
+  @Override
+  public ContainerExportStatus getContainerIdExportStatus(String jobId)
+      throws IOException {
+    GetContainerIdExportStatusRequestProto request =
+        GetContainerIdExportStatusRequestProto.newBuilder()
+            .setJobId(jobId)
+            .build();
+    GetContainerIdExportStatusResponseProto response = submitRequest(
+        Type.GetContainerIdExportStatus,
+        req -> req.setGetContainerIdExportStatusRequest(request))
+        .getGetContainerIdExportStatusResponse();
+    return fromProto(response);
+  }
+
+  private static ContainerExportStatus fromProto(
+      GetContainerIdExportStatusResponseProto response) {
+    ContainerExportStatus.State state;
+    switch (response.getState()) {
+    case RUNNING:
+      state = ContainerExportStatus.State.RUNNING;
+      break;
+    case SUCCEEDED:
+      state = ContainerExportStatus.State.SUCCEEDED;
+      break;
+    case FAILED:
+      state = ContainerExportStatus.State.FAILED;
+      break;
+    default:
+      throw new IllegalArgumentException("Unknown export state: " + response.getState());
+    }
+    String lifecycle = response.hasLifecycleState()
+        ? response.getLifecycleState().name() : null;
+    return new ContainerExportStatus(response.getJobId(), state,
+        response.getTotalRows(), response.getElapsedMs(),
+        response.hasTarPath() ? response.getTarPath() : null,
+        response.hasErrorMessage() ? response.getErrorMessage() : null,
+        response.hasHealthState() ? response.getHealthState() : null,
+        lifecycle,
+        response.hasExportDir() ? response.getExportDir() : null);
   }
 
   /**
