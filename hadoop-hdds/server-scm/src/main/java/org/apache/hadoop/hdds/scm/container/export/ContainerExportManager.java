@@ -63,7 +63,7 @@ public class ContainerExportManager {
   @VisibleForTesting
   static final String EXPORT_SUBDIR = "exports";
   @VisibleForTesting
-  static final int SHARD_RECORDS = 5;
+  static final int SHARD_RECORDS = 500_000;
   @VisibleForTesting
   static final int PAGE_SIZE = 10_000;
 
