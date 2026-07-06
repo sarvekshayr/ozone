@@ -40,6 +40,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
+import org.apache.commons.compress.archivers.tar.TarUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.hdds.HddsUtils;
 import org.apache.hadoop.ozone.OzoneConsts;
@@ -51,6 +52,8 @@ public final class Archiver {
 
   static final int MIN_BUFFER_SIZE = 8 * (int) OzoneConsts.KB; // same as IOUtils.DEFAULT_BUFFER_SIZE
   static final int MAX_BUFFER_SIZE = (int) OzoneConsts.MB;
+  private static final int TAR_SIZE_OFFSET = 124;
+  private static final int TAR_SIZE_LENGTH = 12;
   private static final Logger LOG = LoggerFactory.getLogger(Archiver.class);
 
   private Archiver() {
@@ -71,7 +74,7 @@ public final class Archiver {
   public static void appendFile(File tarFile, File file, String entryName)
       throws IOException {
     if (tarFile.exists() && tarFile.length() > 0) {
-      stripTarEofBlocks(tarFile);
+      stripTarEofMarker(tarFile);
     }
     OpenOption[] options = tarFile.exists() && tarFile.length() > 0
         ? new OpenOption[] {StandardOpenOption.WRITE, StandardOpenOption.APPEND}
@@ -84,29 +87,47 @@ public final class Archiver {
   }
 
   /**
-   * Remove trailing zero blocks so new entries can be appended to a tarball.
+   * Remove the tar end-of-archive marker so new entries can be appended.
    */
-  private static void stripTarEofBlocks(File tarFile) throws IOException {
+  private static void stripTarEofMarker(File tarFile) throws IOException {
     try (RandomAccessFile raf = new RandomAccessFile(tarFile, "rw")) {
-      long size = raf.length();
-      while (size >= TarConstants.DEFAULT_RCDSIZE) {
-        raf.seek(size - TarConstants.DEFAULT_RCDSIZE);
-        byte[] block = new byte[TarConstants.DEFAULT_RCDSIZE];
-        raf.readFully(block);
-        boolean allZero = true;
-        for (byte b : block) {
-          if (b != 0) {
-            allZero = false;
-            break;
-          }
+      long position = 0;
+      long fileLength = raf.length();
+      byte[] header = new byte[TarConstants.DEFAULT_RCDSIZE];
+      while (position + TarConstants.DEFAULT_RCDSIZE <= fileLength) {
+        raf.seek(position);
+        raf.readFully(header);
+        if (isZeroBlock(header)) {
+          raf.setLength(position);
+          return;
         }
-        if (!allZero) {
-          break;
-        }
-        size -= TarConstants.DEFAULT_RCDSIZE;
+        long entrySize = parseTarEntrySize(header);
+        position += TarConstants.DEFAULT_RCDSIZE + paddedTarEntrySize(entrySize);
       }
-      raf.setLength(size);
+      throw new IOException("Invalid tar archive without an end-of-archive marker: " + tarFile);
     }
+  }
+
+  private static boolean isZeroBlock(byte[] block) {
+    for (byte b : block) {
+      if (b != 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static long parseTarEntrySize(byte[] header) throws IOException {
+    try {
+      return TarUtils.parseOctalOrBinary(header, TAR_SIZE_OFFSET, TAR_SIZE_LENGTH);
+    } catch (IllegalArgumentException e) {
+      throw new IOException("Invalid tar entry size.", e);
+    }
+  }
+
+  private static long paddedTarEntrySize(long size) {
+    long recordSize = TarConstants.DEFAULT_RCDSIZE;
+    return ((size + recordSize - 1) / recordSize) * recordSize;
   }
 
   /** Extract {@code tarFile} to {@code dir}. */

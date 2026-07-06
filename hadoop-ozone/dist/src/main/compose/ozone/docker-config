@@ -64,7 +64,6 @@ OZONE-SITE.XML_hdds.scm.replication.under.replicated.interval=10s
 OZONE-SITE.XML_hdds.scm.replication.over.replicated.interval=2m
 OZONE-SITE.XML_hdds.scm.wait.time.after.safemode.exit=30s
 OZONE-SITE.XML_ozone.http.basedir=/tmp/ozone_http
-OZONE-SITE.XML_ozone.scm.container.export.dir=/data/metadata/exports
 
 OZONE-SITE.XML_hdds.container.ratis.datastream.enabled=true
 

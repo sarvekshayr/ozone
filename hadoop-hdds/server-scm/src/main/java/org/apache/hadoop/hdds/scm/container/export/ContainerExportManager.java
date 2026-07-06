@@ -158,7 +158,7 @@ public class ContainerExportManager {
       throw new IllegalArgumentException("start container ID must be non-negative.");
     }
     if (maxRows < 0) {
-      throw new IllegalArgumentException("count must be non-negative.");
+      throw new IllegalArgumentException("maxRows must be non-negative.");
     }
     if (pageSize < 0 || pageSize > MAX_PAGE_SIZE) {
       throw new IllegalArgumentException("pageSize must be between 0 and " + MAX_PAGE_SIZE + ".");
@@ -344,7 +344,6 @@ public class ContainerExportManager {
 
   private static void writeMetadataHeader(BufferedWriter writer, ExportJob job,
       int partNumber, ContainerID shardStartContainerId) throws IOException {
-    writer.newLine();
     writer.write("# jobId=" + job.getJobId());
     writer.newLine();
     writer.write("# timestamp=" + job.getTimestamp());

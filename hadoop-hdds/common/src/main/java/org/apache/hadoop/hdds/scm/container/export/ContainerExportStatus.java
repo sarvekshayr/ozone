@@ -41,7 +41,7 @@ public final class ContainerExportStatus {
   }
 
   @SuppressWarnings("checkstyle:ParameterNumber")
-  public ContainerExportStatus(String jobId, State state, String lifecycleState, String healthState, 
+  public ContainerExportStatus(String jobId, State state, String lifecycleState, String healthState,
       long totalRows, long elapsedMs, String tarPath, String errorMessage) {
     this.jobId = jobId;
     this.state = state;

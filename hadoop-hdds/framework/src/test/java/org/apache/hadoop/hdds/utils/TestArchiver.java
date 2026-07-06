@@ -152,4 +152,25 @@ class TestArchiver {
     assertThat(new String(Files.readAllBytes(extractDir.resolve("part002.txt")),
         StandardCharsets.UTF_8)).isEqualTo("3\n");
   }
+
+  @Test
+  void appendFilePreservesZeroBlocksAtEndOfEntry() throws IOException {
+    Path tmpDir = Files.createTempDirectory("archiver-append-zero-block");
+    File tarFile = tmpDir.resolve("export.tar").toFile();
+    File part1 = tmpDir.resolve("part001.bin").toFile();
+    File part2 = tmpDir.resolve("part002.txt").toFile();
+    byte[] zeroBlockPayload = new byte[1024];
+    Files.write(part1.toPath(), zeroBlockPayload);
+    Files.write(part2.toPath(), "next\n".getBytes(StandardCharsets.UTF_8));
+
+    Archiver.appendFile(tarFile, part1, "part001.bin");
+    Archiver.appendFile(tarFile, part2, "part002.txt");
+
+    Path extractDir = tmpDir.resolve("extract");
+    Archiver.extract(tarFile, extractDir);
+    assertThat(Files.readAllBytes(extractDir.resolve("part001.bin")))
+        .isEqualTo(zeroBlockPayload);
+    assertThat(new String(Files.readAllBytes(extractDir.resolve("part002.txt")),
+        StandardCharsets.UTF_8)).isEqualTo("next\n");
+  }
 }

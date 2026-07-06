@@ -28,7 +28,7 @@ import picocli.CommandLine;
     name = "container",
     description = "Container debug commands.",
     mixinStandardHelpOptions = true,
-    versionProvider = HddsVersionProvider.class,    
+    versionProvider = HddsVersionProvider.class,
     subcommands = {
         ExportContainerIDs.class
     })

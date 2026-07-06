@@ -1458,8 +1458,12 @@ public final class StorageContainerLocationProtocolServerSideTranslatorPB
     }
 
     ContainerHealthState healthState = null;
-    if (request.hasHealthState()) {
-      healthState = ContainerHealthState.valueOf(request.getHealthState());
+    if (request.hasHealthState() && !request.getHealthState().isEmpty()) {
+      try {
+        healthState = ContainerHealthState.valueOf(request.getHealthState());
+      } catch (IllegalArgumentException ex) {
+        throw new IOException("Invalid healthState: " + request.getHealthState(), ex);
+      }
     }
 
     SCMListContainerIDsResponseProto.Builder builder =
@@ -1494,7 +1498,11 @@ public final class StorageContainerLocationProtocolServerSideTranslatorPB
     }
     ContainerHealthState health = null;
     if (request.hasHealthState() && !request.getHealthState().isEmpty()) {
-      health = ContainerHealthState.valueOf(request.getHealthState());
+      try {
+        health = ContainerHealthState.valueOf(request.getHealthState());
+      } catch (IllegalArgumentException ex) {
+        throw new IOException("Invalid healthState: " + request.getHealthState(), ex);
+      }
     }
     if (lifecycle == null && health == null) {
       throw new IOException("At least one of healthState or lifecycleState filter is required.");
