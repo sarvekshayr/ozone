@@ -20,28 +20,36 @@ package org.apache.hadoop.ozone.debug.scm.container;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hdds.cli.AbstractSubcommand;
+import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
-import org.apache.hadoop.hdds.scm.cli.ContainerOperationClient;
+import org.apache.hadoop.hdds.scm.ScmConfigKeys;
+import org.apache.hadoop.hdds.scm.cli.ScmLeaderClientFactory;
+import org.apache.hadoop.hdds.scm.cli.ScmLeaderClientFactory.LeaderPinnedClient;
 import org.apache.hadoop.hdds.scm.cli.ScmOption;
+import org.apache.hadoop.hdds.scm.client.ScmClient;
 import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
+import org.apache.hadoop.hdds.scm.container.export.ContainerExportLimits;
 import org.apache.hadoop.hdds.scm.container.export.ContainerExportStatus;
+import org.apache.hadoop.hdds.scm.ha.SCMNodeInfo;
+import org.apache.hadoop.hdds.server.ServerUtils;
 import picocli.CommandLine;
 
 /**
- * Command to export container IDs to a TAR file on SCM.
+ * Command to export container IDs to a TAR file on the SCM leader.
+ *
+ * <p>Health filters use Replication Manager's last-known {@code ContainerInfo.healthState}
+ * and may be stale if RM has not evaluated a container yet.
  */
 @CommandLine.Command(
     name = "export",
-    description = "Export container IDs matching filters to a TAR file on SCM.",
+    description = "Export container IDs matching filters to a TAR on the SCM leader.",
     subcommands = {
         ExportContainerStatus.class
     })
 public class ExportContainerIDs extends AbstractSubcommand implements Callable<Void> {
-
-  private static final int MAX_PAGE_SIZE = 1_000_000;
-  private static final int MAX_SHARD_SIZE = 5_000_000;
 
   @CommandLine.Mixin
   private ScmOption scmOption;
@@ -56,7 +64,8 @@ public class ExportContainerIDs extends AbstractSubcommand implements Callable<V
 
   @CommandLine.Option(
       names = {"--health-state"},
-      description = "Container health state (e.g. MISSING, EMPTY, UNDER_REPLICATED)")
+      description = "Container health state from Replication Manager (e.g. MISSING, EMPTY, UNDER_REPLICATED). "
+          + "Reflects Replication Manager's last-known health and may be stale.")
   private ContainerHealthState healthState;
 
   @CommandLine.Option(
@@ -99,14 +108,23 @@ public class ExportContainerIDs extends AbstractSubcommand implements Callable<V
           "--watch interval must be greater than 0.");
     }
     validateExportOptions();
+    printExportNotes();
 
     ContainerID start = ContainerID.valueOf(startId);
     long maxRows = count > 0 ? count : 0;
 
-    try (ContainerOperationClient client = new ContainerOperationClient(getOzoneConf())) {
+    try (LeaderPinnedClient pinned = ScmLeaderClientFactory.createLeaderPinnedClient(
+        scmOption, getOzoneConf())) {
+      ScmClient client = pinned.getClient();
+      printScmLeader(out(), pinned.getLeader());
       String jobId = client.submitContainerIdExport(start, lifeCycleState, healthState, maxRows, pageSize, shardSize);
       out().printf("Submitted container ID export job: %s%n", jobId);
+      out().printf("Export directory on SCM leader: %s%n",
+          resolveExportDirectory(getOzoneConf()));
       out().printf("Check status with: ozone debug scm container export status --job-id %s%n", jobId);
+      out().println("Job status is kept in SCM leader memory only. If leadership changes or SCM restarts, " +
+          "the job ID is no longer queryable; re-submit the export on the current leader. Completed TAR " +
+          "files remain on the leader that ran the export");
 
       if (watchIntervalSec == null) {
         return null;
@@ -129,6 +147,31 @@ public class ExportContainerIDs extends AbstractSubcommand implements Callable<V
     }
   }
 
+  private static String resolveExportDirectory(OzoneConfiguration conf) {
+    String configured = conf.getTrimmed(ScmConfigKeys.OZONE_SCM_CONTAINER_EXPORT_DIR, "");
+    if (StringUtils.isNotEmpty(configured)) {
+      return new java.io.File(configured).getAbsolutePath();
+    }
+    return new java.io.File(ServerUtils.getScmDbDir(conf),
+        ContainerExportLimits.EXPORT_SUBDIR).getAbsolutePath();
+  }
+
+  static void printScmLeader(java.io.PrintWriter out, SCMNodeInfo leader) {
+    if (leader != null) {
+      out.printf("SCM leader: %s (%s)%n", leader.getNodeId(), leader.getScmClientAddress());
+    }
+  }
+
+  private void printExportNotes() {
+    if (healthState != null) {
+      err().println("Note: --health-state reflects Replication Manager's last-known health and may be stale.");
+    }
+    if (healthState != null && lifeCycleState == null) {
+      err().println("Note: Health-only export scans all containers (no health index). "
+          + "Prefer --lifecycle-state when possible.");
+    }
+  }
+
   private void validateExportOptions() {
     if (startId < 0) {
       throw new CommandLine.ParameterException(spec.commandLine(),
@@ -138,13 +181,13 @@ public class ExportContainerIDs extends AbstractSubcommand implements Callable<V
       throw new CommandLine.ParameterException(spec.commandLine(),
           "--count must be greater than or equal to 0.");
     }
-    if (pageSize <= 0 || pageSize > MAX_PAGE_SIZE) {
+    if (pageSize <= 0 || pageSize > ContainerExportLimits.MAX_PAGE_SIZE) {
       throw new CommandLine.ParameterException(spec.commandLine(),
-          "--page-size must be between 1 and " + MAX_PAGE_SIZE + ".");
+          "--page-size must be between 1 and " + ContainerExportLimits.MAX_PAGE_SIZE + ".");
     }
-    if (shardSize <= 0 || shardSize > MAX_SHARD_SIZE) {
+    if (shardSize <= 0 || shardSize > ContainerExportLimits.MAX_SHARD_SIZE) {
       throw new CommandLine.ParameterException(spec.commandLine(),
-          "--shard-size must be between 1 and " + MAX_SHARD_SIZE + ".");
+          "--shard-size must be between 1 and " + ContainerExportLimits.MAX_SHARD_SIZE + ".");
     }
   }
 

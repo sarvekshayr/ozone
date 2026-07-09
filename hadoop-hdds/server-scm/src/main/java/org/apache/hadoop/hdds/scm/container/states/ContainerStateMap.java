@@ -321,6 +321,9 @@ public class ContainerStateMap {
    * Returns container IDs matching optional lifecycle and health filters,
    * in ascending {@link ContainerID} order starting from {@code start}
    * (inclusive).
+   * Lifecycle-only and lifecycle + health filters use the lifecycle index.
+   * Health-only filters scan the full container map (no health index); prefer
+   * supplying a lifecycle filter at scale.
    */
   public List<ContainerID> getContainerIDs(LifeCycleState lifeCycleState,
       ContainerHealthState healthState, ContainerID start, int count) {

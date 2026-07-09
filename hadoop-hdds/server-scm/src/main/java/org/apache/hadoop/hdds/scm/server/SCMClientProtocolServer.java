@@ -1562,17 +1562,16 @@ public class SCMClientProtocolServer implements
 
   @Override
   public List<ContainerID> getListOfContainerIDs(
-      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state, ContainerHealthState healthState)
+      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state)
       throws IOException {
 
     final Map<String, String> auditMap = Maps.newHashMap();
     auditMap.put("startContainerID", String.valueOf(startContainerID));
     auditMap.put("count", String.valueOf(count));
     auditMap.put("state", String.valueOf(state));
-    auditMap.put("healthState", String.valueOf(healthState));
     try {
       List<ContainerID> results = scm.getContainerManager().getContainerIDs(
-          startContainerID, count, state, healthState);
+          startContainerID, count, state, null);
       AUDIT.logReadSuccess(buildAuditMessageForSuccess(
           SCMAction.LIST_CONTAINER_IDS, auditMap));
       return results;
@@ -1726,6 +1725,9 @@ public class SCMClientProtocolServer implements
       HddsProtos.LifeCycleState lifecycleState, ContainerHealthState healthState,
       long maxRows, int pageSize, int shardSize) throws IOException {
     getScm().checkAdminAccess(getRemoteUser(), false);
+    if (!getScm().checkLeader()) {
+      throw new IOException("Container ID export must be submitted on the SCM leader.");
+    }
     final Map<String, String> auditMap = Maps.newHashMap();
     auditMap.put("startContainerID", String.valueOf(startContainerId));
     auditMap.put("lifecycleState", String.valueOf(lifecycleState));
@@ -1755,6 +1757,9 @@ public class SCMClientProtocolServer implements
   public ContainerExportStatus getContainerIdExportStatus(String jobId)
       throws IOException {
     getScm().checkAdminAccess(getRemoteUser(), false);
+    if (!getScm().checkLeader()) {
+      throw new IOException("Container ID export status is available on the SCM leader only.");
+    }
     ContainerExportStatus status = scm.getContainerExportManager().getJobStatus(jobId);
     if (status == null) {
       throw new IOException("Export job not found: " + jobId);

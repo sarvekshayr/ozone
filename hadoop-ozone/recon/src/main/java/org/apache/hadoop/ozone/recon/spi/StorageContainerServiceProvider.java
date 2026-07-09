@@ -20,7 +20,6 @@ package org.apache.hadoop.ozone.recon.spi;
 import java.io.IOException;
 import java.util.List;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
-import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.common.helpers.ContainerWithPipeline;
@@ -92,8 +91,7 @@ public interface StorageContainerServiceProvider {
    */
   List<ContainerID> getListOfContainerIDs(ContainerID startContainerID,
                                           int count,
-                                          HddsProtos.LifeCycleState state,
-                                          ContainerHealthState healthState)
+                                          HddsProtos.LifeCycleState state)
       throws IOException;
 
   /**

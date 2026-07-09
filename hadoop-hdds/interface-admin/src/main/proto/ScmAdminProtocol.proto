@@ -308,7 +308,6 @@ message SCMListContainerIDsRequestProto {
   optional ContainerID startContainerID = 2;
   optional LifeCycleState state = 3;
   optional string traceID = 4;
-  optional string healthState = 5;
 }
 
 message SCMListContainerIDsResponseProto {

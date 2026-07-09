@@ -20,17 +20,18 @@ package org.apache.hadoop.ozone.debug.scm.container;
 import java.io.PrintWriter;
 import java.util.concurrent.Callable;
 import org.apache.hadoop.hdds.cli.AbstractSubcommand;
-import org.apache.hadoop.hdds.scm.cli.ContainerOperationClient;
+import org.apache.hadoop.hdds.scm.cli.ScmLeaderClientFactory;
+import org.apache.hadoop.hdds.scm.cli.ScmLeaderClientFactory.LeaderPinnedClient;
 import org.apache.hadoop.hdds.scm.cli.ScmOption;
 import org.apache.hadoop.hdds.scm.container.export.ContainerExportStatus;
 import picocli.CommandLine;
 
 /**
- * Command to check status of export container IDs to a TAR file on SCM.
+ * Command to check status of a container ID export job on the SCM leader.
  */
 @CommandLine.Command(
     name = "status",
-    description = "Get status of a container ID export job.")
+    description = "Get status of a container ID export job on the SCM leader.")
 public class ExportContainerStatus extends AbstractSubcommand implements Callable<Void> {
 
   @CommandLine.Mixin
@@ -44,8 +45,9 @@ public class ExportContainerStatus extends AbstractSubcommand implements Callabl
 
   @Override
   public Void call() throws Exception {
-    try (ContainerOperationClient client = new ContainerOperationClient(getOzoneConf())) {
-      printStatus(out(), client.getContainerIdExportStatus(jobId));
+    try (LeaderPinnedClient pinned = ScmLeaderClientFactory.createLeaderPinnedClient(scmOption, getOzoneConf())) {
+      ExportContainerIDs.printScmLeader(out(), pinned.getLeader());
+      printStatus(out(), pinned.getClient().getContainerIdExportStatus(jobId));
     }
     return null;
   }

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -85,7 +84,7 @@ class TestReconStorageContainerSyncHelper {
     when(mockContainerManager.getContainerStateCount(CLOSED)).thenReturn(10);
     when(mockContainerManager.getContainerStateCount(DELETED)).thenReturn(7);
     when(mockScmServiceProvider.getListOfContainerIDs(
-        any(), any(Integer.class), any(), any())).thenReturn(Collections.emptyList());
+        any(), any(Integer.class), any())).thenReturn(Collections.emptyList());
 
     boolean result = syncHelper.syncWithSCMContainerInfo();
 
@@ -113,7 +112,7 @@ class TestReconStorageContainerSyncHelper {
 
     when(mockScmServiceProvider.getContainerCount(CLOSED)).thenReturn(1L);
     when(mockScmServiceProvider.getListOfContainerIDs(
-        eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
+        eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
         .thenReturn(Collections.singletonList(cid));
     when(mockContainerManager.containerExist(cid)).thenReturn(false);
     // Pass 1 now uses getExistContainerWithPipelinesInBatch for missing containers so that
@@ -156,10 +155,10 @@ class TestReconStorageContainerSyncHelper {
 
     when(mockScmServiceProvider.getContainerCount(CLOSED)).thenReturn(3L);
     when(mockScmServiceProvider.getListOfContainerIDs(
-        eq(ContainerID.valueOf(1L)), eq(2), eq(CLOSED), isNull()))
+        eq(ContainerID.valueOf(1L)), eq(2), eq(CLOSED)))
         .thenReturn(Arrays.asList(cid1, cid2));
     when(mockScmServiceProvider.getListOfContainerIDs(
-        eq(ContainerID.valueOf(3L)), eq(2), eq(CLOSED), isNull()))
+        eq(ContainerID.valueOf(3L)), eq(2), eq(CLOSED)))
         .thenReturn(Collections.singletonList(cid3));
 
     // Stub getContainer for cid3 (exists in Recon) so processSyncedClosedContainer
@@ -193,9 +192,9 @@ class TestReconStorageContainerSyncHelper {
         argThat(cwp -> cwp.getContainerInfo().getContainerID() == 3L));
     // Both pages were fetched
     verify(mockScmServiceProvider).getListOfContainerIDs(
-        eq(ContainerID.valueOf(1L)), eq(2), eq(CLOSED), isNull());
+        eq(ContainerID.valueOf(1L)), eq(2), eq(CLOSED));
     verify(mockScmServiceProvider).getListOfContainerIDs(
-        eq(ContainerID.valueOf(3L)), eq(2), eq(CLOSED), isNull());
+        eq(ContainerID.valueOf(3L)), eq(2), eq(CLOSED));
   }
 
   @Test
@@ -212,7 +211,7 @@ class TestReconStorageContainerSyncHelper {
 
     when(mockScmServiceProvider.getContainerCount(CLOSED)).thenReturn(1L);
     when(mockScmServiceProvider.getListOfContainerIDs(
-        eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
+        eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
         .thenReturn(Collections.singletonList(cid));
     when(mockContainerManager.containerExist(cid)).thenReturn(true);
     when(mockContainerManager.getContainer(cid)).thenReturn(closedInfo);
@@ -237,7 +236,7 @@ class TestReconStorageContainerSyncHelper {
     verify(mockContainerManager, never()).addNewContainer(any());
     verify(mockContainerManager, never()).updateContainerState(any(), any());
     verify(mockScmServiceProvider, never())
-        .getListOfContainerIDs(any(), any(Integer.class), eq(CLOSED), isNull());
+        .getListOfContainerIDs(any(), any(Integer.class), eq(CLOSED));
   }
 
   @Test
@@ -248,7 +247,7 @@ class TestReconStorageContainerSyncHelper {
     // as "end of pagination" and returns true; it does NOT treat this as an error.
     when(mockScmServiceProvider.getContainerCount(CLOSED)).thenReturn(1L);
     when(mockScmServiceProvider.getListOfContainerIDs(
-        eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED), isNull()))
+        eq(ContainerID.valueOf(1L)), eq(1), eq(CLOSED)))
         .thenReturn(Collections.emptyList());
 
     boolean result = syncHelper.syncWithSCMContainerInfo();

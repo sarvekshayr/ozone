@@ -230,9 +230,9 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
 
   private ScmContainerLocationResponse submitRpcRequest(
       ScmContainerLocationRequest wrapper) throws ServiceException {
-    // If targetScmNode has a specific node ID, route follower-readable requests to that node
-    if (targetScmNode != null && targetScmNode.hasNodeId() && 
-        FOLLOWER_READABLE_COMMAND_TYPES.contains(wrapper.getCmdType())) {
+    // If targetScmNode has a specific node ID, route non-admin requests to that node without
+    // HA failover. Used by follower-readable commands and leader-only commands such as export.
+    if (targetScmNode != null && targetScmNode.hasNodeId() && !ADMIN_COMMAND_TYPE.contains(wrapper.getCmdType())) {
       try {
         StorageContainerLocationProtocolPB proxy = fpp.getProxyForNode(targetScmNode.getNodeId());
         return proxy.submitRequest(NULL_RPC_CONTROLLER, wrapper);
@@ -1277,7 +1277,7 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
 
   @Override
   public List<ContainerID> getListOfContainerIDs(
-      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state, ContainerHealthState healthState)
+      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state)
       throws IOException {
     Preconditions.checkState(startContainerID.getId() >= 0,
         "Container ID cannot be negative.");
@@ -1289,9 +1289,6 @@ public final class StorageContainerLocationProtocolClientSideTranslatorPB
     builder.setCount(count);
     builder.setTraceID(TracingUtil.exportCurrentSpan());
     builder.setState(state);
-    if (healthState != null) {
-      builder.setHealthState(healthState.name());
-    }
 
     SCMListContainerIDsRequestProto request = builder.build();
 

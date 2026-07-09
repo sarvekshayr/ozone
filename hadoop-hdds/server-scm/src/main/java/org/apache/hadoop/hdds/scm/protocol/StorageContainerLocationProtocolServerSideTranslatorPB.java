@@ -1457,20 +1457,11 @@ public final class StorageContainerLocationProtocolServerSideTranslatorPB
       state = request.getState();
     }
 
-    ContainerHealthState healthState = null;
-    if (request.hasHealthState() && !request.getHealthState().isEmpty()) {
-      try {
-        healthState = ContainerHealthState.valueOf(request.getHealthState());
-      } catch (IllegalArgumentException ex) {
-        throw new IOException("Invalid healthState: " + request.getHealthState(), ex);
-      }
-    }
-
     SCMListContainerIDsResponseProto.Builder builder =
         SCMListContainerIDsResponseProto.newBuilder();
 
     List<ContainerID> containerIDs = impl.getListOfContainerIDs(
-        startContainerID, request.getCount(), state, healthState);
+        startContainerID, request.getCount(), state);
 
     containerIDs.stream()
         .map(ContainerID::getProtobuf)

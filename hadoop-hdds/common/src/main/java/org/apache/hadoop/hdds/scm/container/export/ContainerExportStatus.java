@@ -18,7 +18,7 @@
 package org.apache.hadoop.hdds.scm.container.export;
 
 /**
- * Client-side view of a container ID export job on SCM.
+ * Client-side view of a container ID export job on the SCM leader.
  */
 public final class ContainerExportStatus {
 

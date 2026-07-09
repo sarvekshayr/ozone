@@ -532,7 +532,7 @@ public interface StorageContainerLocationProtocol extends Closeable {
       throws IOException;
 
   List<ContainerID> getListOfContainerIDs(
-      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state, ContainerHealthState healthState)
+      ContainerID startContainerID, int count, HddsProtos.LifeCycleState state)
       throws IOException;
 
   DecommissionScmResponseProto decommissionScm(
