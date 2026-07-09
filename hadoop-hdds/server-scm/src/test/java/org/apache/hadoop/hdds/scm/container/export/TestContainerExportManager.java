@@ -37,7 +37,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
@@ -106,7 +105,7 @@ public class TestContainerExportManager {
     Path extractDir = Files.createTempDirectory("export-tar");
     try {
       Archiver.extract(new File(status.getTarPath()), extractDir);
-      String part2Name = Arrays.stream(Objects.requireNonNull(extractDir.toFile().list()))
+      String part2Name = Arrays.stream(extractDir.toFile().list())
           .filter(name -> name.endsWith("part002.txt"))
           .findFirst()
           .orElseThrow(() -> new AssertionError("part002.txt not found in TAR"));
