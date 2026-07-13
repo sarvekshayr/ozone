@@ -641,6 +641,13 @@ public final class ScmConfigKeys {
       "ozone.scm.ratis.events.max.limit";
   public static final int OZONE_SCM_RATIS_EVENTS_MAX_LIMIT_DEFAULT = 100;
 
+  public static final String OZONE_SCM_CONTAINER_EXPORT_DIR =
+      "ozone.scm.container.export.dir";
+
+  public static final String OZONE_SCM_CONTAINER_EXPORT_MAX_TERMINAL_JOBS =
+      "ozone.scm.container.export.max.terminal.jobs";
+  public static final int OZONE_SCM_CONTAINER_EXPORT_MAX_TERMINAL_JOBS_DEFAULT = 10;
+
   /**
    * Never constructed.
    */

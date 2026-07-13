@@ -764,6 +764,25 @@
     </description>
   </property>
   <property>
+    <name>ozone.scm.container.export.dir</name>
+    <value/>
+    <tag>OZONE, SCM, STORAGE</tag>
+    <description>
+      Directory where the SCM leader writes container ID export TAR files.
+      When unset, exports are stored under {ozone.scm.db.dirs}/exports.
+      Use a separate volume in production to avoid filling the SCM metadata disk.
+    </description>
+  </property>
+  <property>
+    <name>ozone.scm.container.export.max.terminal.jobs</name>
+    <value>10</value>
+    <tag>OZONE, SCM</tag>
+    <description>
+      Maximum number of completed (SUCCEEDED or FAILED) export jobs retained in
+      SCM memory for status lookup. Older terminal jobs are evicted on new submits.
+    </description>
+  </property>
+  <property>
     <name>ozone.scm.block.client.address</name>
     <value/>
     <tag>OZONE, SCM</tag>
