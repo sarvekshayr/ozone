@@ -1569,7 +1569,7 @@ public class SCMClientProtocolServer implements
     auditMap.put("state", String.valueOf(state));
     try {
       List<ContainerID> results = scm.getContainerManager().getContainerIDs(
-          startContainerID, count, state);
+          startContainerID, count, state, null);
       AUDIT.logReadSuccess(buildAuditMessageForSuccess(
           SCMAction.LIST_CONTAINER_IDS, auditMap));
       return results;

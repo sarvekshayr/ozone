@@ -17,6 +17,7 @@
 
 package org.apache.hadoop.hdds.scm.container.states;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Objects;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.hadoop.hdds.protocol.DatanodeID;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState;
 import org.apache.hadoop.hdds.protocol.proto.HddsProtos.ReplicationType;
+import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
 import org.apache.hadoop.hdds.scm.container.ContainerID;
 import org.apache.hadoop.hdds.scm.container.ContainerInfo;
 import org.apache.hadoop.hdds.scm.container.ContainerReplica;
@@ -116,6 +118,30 @@ public class ContainerStateMap {
           .map(ContainerEntry::getInfo)
           .limit(count)
           .collect(Collectors.toList());
+    }
+
+    List<ContainerID> getFilteredContainerIDs(ContainerID start, int count,
+        LifeCycleState lifeCycleState, ContainerHealthState healthState) {
+      Objects.requireNonNull(start, "start == null");
+      Preconditions.assertTrue(count >= 0, "count < 0");
+      List<ContainerID> result = new ArrayList<>(Math.min(count, 64));
+      if (count == 0) {
+        return result;
+      }
+      for (ContainerEntry entry : map.tailMap(start).values()) {
+        ContainerInfo info = entry.getInfo();
+        if (lifeCycleState != null && info.getState() != lifeCycleState) {
+          continue;
+        }
+        if (healthState != null && info.getHealthState() != healthState) {
+          continue;
+        }
+        result.add(info.containerID());
+        if (result.size() >= count) {
+          break;
+        }
+      }
+      return result;
     }
 
     Set<ContainerReplica> getReplicas(ContainerID id) {
@@ -272,6 +298,44 @@ public class ContainerStateMap {
     return lifeCycleStateMap.tailMap(state, start).keySet().stream()
         .limit(count)
         .collect(Collectors.toList());
+  }
+
+  private List<ContainerID> getContainerIDsFromLifecycleIndex(LifeCycleState lifeCycleState,
+      ContainerHealthState healthState, ContainerID start, int count) {
+    List<ContainerID> result = new ArrayList<>(Math.min(count, 64));
+    if (count == 0) {
+      return result;
+    }
+    for (ContainerInfo info : lifeCycleStateMap.tailMap(lifeCycleState, start).values()) {
+      if (info.getHealthState() == healthState) {
+        result.add(info.containerID());
+        if (result.size() >= count) {
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns container IDs matching optional lifecycle and health filters,
+   * in ascending {@link ContainerID} order starting from {@code start}
+   * (inclusive).
+   * Lifecycle-only and lifecycle + health filters use the lifecycle index.
+   * Health-only filters scan the full container map (no health index); prefer
+   * supplying a lifecycle filter at scale.
+   */
+  public List<ContainerID> getContainerIDs(LifeCycleState lifeCycleState,
+      ContainerHealthState healthState, ContainerID start, int count) {
+    Preconditions.assertTrue(count >= 0, "count < 0");
+    if (healthState == null && lifeCycleState != null) {
+      return getContainerIDs(lifeCycleState, start, count);
+    }
+    if (healthState != null && lifeCycleState != null) {
+      return getContainerIDsFromLifecycleIndex(lifeCycleState, healthState, start, count);
+    }
+    return containerMap.getFilteredContainerIDs(start, count, lifeCycleState,
+        healthState);
   }
 
   public List<ContainerInfo> getContainerInfos(ContainerID start, int count) {
