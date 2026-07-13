@@ -47,7 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Class tests OMKeysDeleteRequest.
  */
-public class TestOMKeysDeleteRequest extends TestOMKeyRequest {
+public class TestOMKeysDeleteRequest extends OMKeyRequestTests {
 
   private List<String> deleteKeyList;
   private OMRequest omRequest;

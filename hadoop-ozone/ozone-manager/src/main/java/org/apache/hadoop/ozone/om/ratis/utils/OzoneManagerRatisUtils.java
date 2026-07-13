@@ -71,6 +71,8 @@ import org.apache.hadoop.ozone.om.request.s3.multipart.S3ExpiredMultipartUploads
 import org.apache.hadoop.ozone.om.request.s3.security.OMSetSecretRequest;
 import org.apache.hadoop.ozone.om.request.s3.security.S3GetSecretRequest;
 import org.apache.hadoop.ozone.om.request.s3.security.S3RevokeSecretRequest;
+import org.apache.hadoop.ozone.om.request.s3.tagging.S3DeleteBucketTaggingRequest;
+import org.apache.hadoop.ozone.om.request.s3.tagging.S3PutBucketTaggingRequest;
 import org.apache.hadoop.ozone.om.request.s3.tenant.OMSetRangerServiceVersionRequest;
 import org.apache.hadoop.ozone.om.request.s3.tenant.OMTenantAssignAdminRequest;
 import org.apache.hadoop.ozone.om.request.s3.tenant.OMTenantAssignUserAccessIdRequest;
@@ -354,6 +356,10 @@ public final class OzoneManagerRatisUtils {
       return new OMLifecycleSetServiceStatusRequest(omRequest);
     case SaveLifecycleScanState:
       return new OMLifecycleSaveScanStateRequest(omRequest);
+    case PutBucketTagging:
+      return new S3PutBucketTaggingRequest(omRequest);
+    case DeleteBucketTagging:
+      return new S3DeleteBucketTaggingRequest(omRequest);
     default:
       throw new OMException("Unrecognized write command type request "
           + cmdType, OMException.ResultCodes.INVALID_REQUEST);

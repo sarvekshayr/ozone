@@ -544,6 +544,20 @@ public interface ClientProtocol {
       throws IOException;
 
   /**
+   * Deletes an existing key if the key's current ETag matches expectedETag.
+   * @param volumeName Name of the Volume
+   * @param bucketName Name of the Bucket
+   * @param keyName Name of the Key
+   * @param recursive recursive deletion of all sub path keys if true,
+   *                  otherwise non-recursive
+   * @param expectedETag expected ETag, or "*" to require the key to exist
+   * @throws IOException
+   */
+  void deleteKey(String volumeName, String bucketName, String keyName,
+                 boolean recursive, String expectedETag)
+      throws IOException;
+
+  /**
    * Deletes keys through the list.
    * @param volumeName Name of the Volume
    * @param bucketName Name of the Bucket
@@ -1226,8 +1240,6 @@ public interface ClientProtocol {
    */
   void setThreadLocalS3Auth(S3Auth s3Auth);
 
-  void setIsS3Request(boolean isS3Request);
-
   /**
    * Gets the S3 Authentication information that is attached to the thread.
    * @return S3 Authentication information.
@@ -1526,4 +1538,31 @@ public interface ClientProtocol {
   void deleteLifecycleConfiguration(String volumeName, String bucketName)
       throws IOException;
 
+  /**
+   * Gets the tags for an existing bucket.
+   * @param volumeName Volume name.
+   * @param bucketName Bucket name.
+   * @return Tags for the specified bucket.
+   * @throws IOException
+   */
+  Map<String, String> getBucketTagging(String volumeName, String bucketName)
+      throws IOException;
+
+  /**
+   * Sets tags on an existing bucket (replaces existing tag set).
+   * @param volumeName Volume name.
+   * @param bucketName Bucket name.
+   * @param tags Tags to set on the bucket.
+   * @throws IOException
+   */
+  void putBucketTagging(String volumeName, String bucketName,
+      Map<String, String> tags) throws IOException;
+
+  /**
+   * Removes all tags from the specified bucket.
+   * @param volumeName Volume name.
+   * @param bucketName Bucket name.
+   * @throws IOException
+   */
+  void deleteBucketTagging(String volumeName, String bucketName) throws IOException;
 }

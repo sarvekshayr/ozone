@@ -1626,7 +1626,7 @@ public class KeyLifecycleService extends BackgroundService {
               }
             }
             LOG.info("Created directory {}/{}/{}", bucket.getVolumeName(), bucket.getBucketName(), dirPath);
-          } catch (InterruptedException | IOException e1) {
+          } catch (IOException | InterruptedException e1) {
             LOG.error("Failed to send CreateDirectoryRequest for {}", dirPath, e1);
             throw new IOException("Failed to send CreateDirectoryRequest request for " + dirPath);
           }
