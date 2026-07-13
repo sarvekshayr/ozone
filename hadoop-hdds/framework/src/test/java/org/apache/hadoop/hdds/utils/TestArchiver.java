@@ -142,15 +142,15 @@ class TestArchiver {
     Files.write(part1.toPath(), "1\n2\n".getBytes(StandardCharsets.UTF_8));
     Files.write(part2.toPath(), "3\n".getBytes(StandardCharsets.UTF_8));
 
-    Archiver.appendFile(tarFile, part1, "part001.txt");
-    Archiver.appendFile(tarFile, part2, "part002.txt");
+    try (Archiver.AppendableTar tar = Archiver.openForAppend(tarFile)) {
+      tar.appendFile(part1, "part001.txt");
+      tar.appendFile(part2, "part002.txt");
+    }
 
     Path extractDir = tmpDir.resolve("extract");
     Archiver.extract(tarFile, extractDir);
-    assertThat(new String(Files.readAllBytes(extractDir.resolve("part001.txt")),
-        StandardCharsets.UTF_8)).isEqualTo("1\n2\n");
-    assertThat(new String(Files.readAllBytes(extractDir.resolve("part002.txt")),
-        StandardCharsets.UTF_8)).isEqualTo("3\n");
+    assertThat(extractDir.resolve("part001.txt")).hasSameBinaryContentAs(part1.toPath());
+    assertThat(extractDir.resolve("part002.txt")).hasSameBinaryContentAs(part2.toPath());
   }
 
   @Test
@@ -163,14 +163,14 @@ class TestArchiver {
     Files.write(part1.toPath(), zeroBlockPayload);
     Files.write(part2.toPath(), "next\n".getBytes(StandardCharsets.UTF_8));
 
-    Archiver.appendFile(tarFile, part1, "part001.bin");
-    Archiver.appendFile(tarFile, part2, "part002.txt");
+    try (Archiver.AppendableTar tar = Archiver.openForAppend(tarFile)) {
+      tar.appendFile(part1, "part001.bin");
+      tar.appendFile(part2, "part002.txt");
+    }
 
     Path extractDir = tmpDir.resolve("extract");
     Archiver.extract(tarFile, extractDir);
-    assertThat(Files.readAllBytes(extractDir.resolve("part001.bin")))
-        .isEqualTo(zeroBlockPayload);
-    assertThat(new String(Files.readAllBytes(extractDir.resolve("part002.txt")),
-        StandardCharsets.UTF_8)).isEqualTo("next\n");
+    assertThat(extractDir.resolve("part001.bin")).hasSameBinaryContentAs(part1.toPath());
+    assertThat(extractDir.resolve("part002.txt")).hasSameBinaryContentAs(part2.toPath());
   }
 }
