@@ -50,17 +50,17 @@ class TestContainerStateMap {
 
   @Test
   void testGetContainerIDs() {
-    assertEquals(4, map.getContainerIDs(OPEN, ContainerID.MIN, 10).size());
-    assertEquals(4, map.getContainerIDs(CLOSED, ContainerID.MIN, 10).size());
+    assertEquals(4, map.getContainerIDs(OPEN, null, ContainerID.MIN, 10).size());
+    assertEquals(4, map.getContainerIDs(CLOSED, null, ContainerID.MIN, 10).size());
 
     // verify pagination
-    assertEquals(3, map.getContainerIDs(CLOSED, ContainerID.MIN, 3).size());
-    assertEquals(3, map.getContainerIDs(CLOSED, ContainerID.valueOf(7), 3).size());
+    assertEquals(3, map.getContainerIDs(CLOSED, null, ContainerID.MIN, 3).size());
+    assertEquals(3, map.getContainerIDs(CLOSED, null, ContainerID.valueOf(7), 3).size());
   }
 
   /**
-   * {@code getContainerIDs(lifecycle, health, start, count)} with {@code health == null}
-   * delegates to lifecycle-index {@code getContainerIDs(lifecycle, start, count)}.
+   * {@code getContainerIDs(lifecycle, health, start, count)} with {@code healthState == null}
+   * uses the lifecycle index.
    */
   @Test
   void testGetContainerIDsForLifecycleState() {
@@ -69,18 +69,18 @@ class TestContainerStateMap {
   }
 
   /**
-   * {@code getContainerIDs(lifecycle, health, start, count)} with both filters set
-   * delegates to {@code getContainerIDsFromLifecycleIndex}.
+   * {@code getContainerIDs(lifecycle, health, start, count)} with both lifeCycleState and
+   * healthState set uses the lifecycle index.
    */
   @Test
-  void testGetContainerIDsFromLifecycleIndexPath() {
+  void testGetContainerIDsWithLifeCycleStateAndHealthState() {
     List<ContainerID> missingClosed = map.getContainerIDs(CLOSED, MISSING, ContainerID.MIN, 10);
     assertEquals(Arrays.asList(2L, 8L), toIds(missingClosed));
   }
 
   /**
-   * {@code getContainerIDs(lifecycle, health, start, count)} with {@code lifecycle == null}
-   * delegates to {@code containerMap.getFilteredContainerIDs} (full-map scan, no health index).
+   * {@code getContainerIDs(lifecycle, health, start, count)} with {@code lifeCycleState == null}
+   * scans the full container map (no lifecycle index).
    */
   @Test
   void testGetContainerIDsFullMapScanPath() {
