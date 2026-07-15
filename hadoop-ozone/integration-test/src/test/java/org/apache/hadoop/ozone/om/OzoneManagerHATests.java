@@ -15,13 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.ozone.container.common.transport.server.ratis;
+package org.apache.hadoop.ozone.om;
+
+import org.junit.jupiter.api.BeforeAll;
 
 /**
- * Test class to ContainerStateMachine class for leader.
+ * Base class for Ozone Manager HA tests.
  */
-public class TestContainerStateMachineLeader extends ContainerStateMachineTests {
-  public TestContainerStateMachineLeader() {
-    super(true);
+public abstract class OzoneManagerHATests extends AbstractOzoneManagerHATest {
+
+  @BeforeAll
+  public static void init() throws Exception {
+    initCluster(false);
+  }
+
+  /**
+   * Stop the current leader OM.
+   */
+  protected void stopLeaderOM() {
+    // The omFailoverProxyProvider will point to the current leader OM node.
+    final String leaderOMNodeId = OmTestUtil.getCurrentOmProxyNodeId(getObjectStore());
+
+    // Stop one of the ozone manager, to see when the OM leader changes
+    // multipart upload is happening successfully or not.
+    getCluster().stopOzoneManager(leaderOMNodeId);
   }
 }
