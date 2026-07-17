@@ -17,6 +17,9 @@
 
 package org.apache.hadoop.hdds.scm.container.export;
 
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos.LifeCycleState;
+import org.apache.hadoop.hdds.scm.container.ContainerHealthState;
+
 /**
  * Client-side view of a container ID export job on the SCM leader.
  */
@@ -24,8 +27,8 @@ public final class ContainerExportStatus {
 
   private final String jobId;
   private final State state;
-  private final String lifecycleState;
-  private final String healthState;
+  private final LifeCycleState lifecycleState;
+  private final ContainerHealthState healthState;
   private final long totalRows;
   private final long elapsedMs;
   private final String tarPath;
@@ -41,8 +44,8 @@ public final class ContainerExportStatus {
   }
 
   @SuppressWarnings("checkstyle:ParameterNumber")
-  public ContainerExportStatus(String jobId, State state, String lifecycleState, String healthState,
-      long totalRows, long elapsedMs, String tarPath, String errorMessage) {
+  public ContainerExportStatus(String jobId, State state, LifeCycleState lifecycleState, 
+      ContainerHealthState healthState, long totalRows, long elapsedMs, String tarPath, String errorMessage) {
     this.jobId = jobId;
     this.state = state;
     this.lifecycleState = lifecycleState;
@@ -61,11 +64,11 @@ public final class ContainerExportStatus {
     return state;
   }
 
-  public String getLifecycleState() {
+  public LifeCycleState getLifecycleState() {
     return lifecycleState;
   }
 
-  public String getHealthState() {
+  public ContainerHealthState getHealthState() {
     return healthState;
   }
 
