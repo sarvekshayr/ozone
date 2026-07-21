@@ -41,7 +41,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
@@ -64,8 +63,9 @@ import org.slf4j.LoggerFactory;
  * if RM has not yet evaluated a container.
  *
  * <p>Job status is kept in memory only. On SCM restart or leader failover, in-flight jobs are lost
- * and the operator must re-submit on the new leader. Completed TAR files remain on disk until
- * manually deleted. On startup, incomplete work ({@code {jobId}.inprogress} markers, UUID work
+ * and the operator must re-submit on the new leader. Completed TAR files are kept on disk while their
+ * job status remains in {@code jobTracker}; when a terminal job is evicted past {@code maxTerminalJobs},
+ * its TAR is deleted as well. On startup, incomplete work ({@code {jobId}.inprogress} markers, UUID work
  * directories, and matching partial TAR files) is removed.
  */
 public class ContainerExportManager {
@@ -84,7 +84,6 @@ public class ContainerExportManager {
 
   private final Map<String, ExportJob> jobTracker = new ConcurrentHashMap<>();
   private final ExecutorService workerPool;
-  private final Map<String, Future<?>> runningTasks = new ConcurrentHashMap<>();
   private final ContainerManager containerManager;
   private final ContainerExportMetrics metrics;
   private final BooleanSupplier isLeaderReady;
@@ -126,7 +125,9 @@ public class ContainerExportManager {
         exportDirectory, defaultShardSize, defaultPageSize, maxTerminalJobs);
   }
 
-  // TODO: make ozone.scm.container.export.dir configurable.
+  // TODO: make ozone.scm.container.export.dir configurable
+  // Set path separate from scm.db.dirs to avoid large export TAR I/O 
+  // contending with SCM metadata DB access as the disk fills.
   private static String resolveExportDirectory(OzoneConfiguration conf) {
     File scmDbDir = ServerUtils.getScmDbDir(conf);
     return new File(scmDbDir, EXPORT_SUBDIR).getAbsolutePath();
@@ -173,8 +174,7 @@ public class ContainerExportManager {
       metrics.incrExportJobsSubmitted();
     }
 
-    Future<?> future = workerPool.submit(() -> executeExport(job));
-    runningTasks.put(jobId, future);
+    workerPool.submit(() -> executeExport(job));
     LOG.info("Submitted container ID export job {} (scope={}, start={}, maxRows={}, pageSize={}, shardSize={})",
         jobId, scope, start, maxRows, resolvedPageSize, resolvedShardSize);
     return jobId;
@@ -209,7 +209,6 @@ public class ContainerExportManager {
       LOG.warn("Timeout waiting for export worker shutdown", e);
       Thread.currentThread().interrupt();
     }
-    runningTasks.clear();
     if (metrics != null) {
       metrics.unRegister();
     }
@@ -226,7 +225,20 @@ public class ContainerExportManager {
         .collect(Collectors.toList());
     int excess = terminalJobs.size() - maxTerminalJobs;
     for (int i = 0; i < excess; i++) {
-      jobTracker.remove(terminalJobs.get(i).getKey());
+      Map.Entry<String, ExportJob> evicted = terminalJobs.get(i);
+      deleteExportTar(evicted.getValue());
+      jobTracker.remove(evicted.getKey());
+    }
+  }
+
+  private void deleteExportTar(ExportJob job) {
+    String tarPath = job.getTarPath();
+    if (tarPath == null) {
+      return;
+    }
+    File tar = new File(tarPath);
+    if (tar.isFile() && FileUtils.deleteQuietly(tar)) {
+      LOG.debug("Removed container export TAR for evicted job {}: {}", job.getJobId(), tar.getName());
     }
   }
 
@@ -405,18 +417,19 @@ public class ContainerExportManager {
           appendShardToTar(appendableTar, currentShardPath, shardEntryName(job, fileIndex));
         }
 
-        clearExportInProgress(job.getJobId());
         FileUtils.deleteQuietly(workDir.toFile());
         FileUtils.deleteQuietly(jobDir.toFile());
         job.setState(ContainerExportStatus.State.SUCCEEDED);
         succeeded = true;
-        LOG.info("Export job {} completed ({} rows, tar={}). "
-                + "Delete the TAR file manually on the SCM leader when no longer needed.",
+        LOG.info("Export job {} completed ({} rows, tar={}).",
             job.getJobId(), totalRows, tarFile.getAbsolutePath());
       } finally {
         closeWriter(writer);
         if (appendableTar != null) {
           appendableTar.close();
+          if (succeeded) {
+            clearExportInProgress(job.getJobId());
+          }
         }
       }
     } catch (InterruptedException e) {
@@ -431,7 +444,6 @@ public class ContainerExportManager {
       cleanupFailedArtifacts(jobDir, tarFile, job.getJobId());
       LOG.error("Export job {} failed", job.getJobId(), e);
     } finally {
-      runningTasks.remove(job.getJobId());
       if (metrics != null) {
         if (succeeded) {
           metrics.incrExportJobsSucceeded();

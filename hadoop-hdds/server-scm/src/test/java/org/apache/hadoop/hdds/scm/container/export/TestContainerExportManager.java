@@ -210,7 +210,9 @@ public class TestContainerExportManager {
         eq(ContainerID.valueOf(2)), anyInt(), isNull(), eq(ContainerHealthState.MISSING)))
         .thenReturn(Collections.emptyList());
     String job1 = exportManager.submitJob(ContainerID.valueOf(0), null, ContainerHealthState.MISSING, 0, 0, 0);
-    waitForTerminal(job1);
+    ContainerExportStatus status1 = waitForTerminal(job1);
+    File tar1 = new File(status1.getTarPath());
+    assertTrue(tar1.exists());
 
     when(containerManager.getContainerIDs(
         eq(ContainerID.valueOf(0)), anyInt(), isNull(), eq(ContainerHealthState.EMPTY)))
@@ -234,6 +236,7 @@ public class TestContainerExportManager {
     assertNotNull(exportManager.getJobStatus(job2));
     assertNotNull(exportManager.getJobStatus(job3));
     assertNull(exportManager.getJobStatus(job1));
+    assertFalse(tar1.exists()); //evicting a terminal job deletes its TAR too
   }
 
   @Test
