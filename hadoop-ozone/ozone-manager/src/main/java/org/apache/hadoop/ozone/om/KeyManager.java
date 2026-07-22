@@ -40,7 +40,6 @@ import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.service.CompactionService;
 import org.apache.hadoop.ozone.om.service.DirectoryDeletingService;
 import org.apache.hadoop.ozone.om.service.KeyDeletingService;
-import org.apache.hadoop.ozone.om.service.KeyLifecycleService;
 import org.apache.hadoop.ozone.om.service.SnapshotDeletingService;
 import org.apache.hadoop.ozone.om.snapshot.defrag.SnapshotDefragService;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.ExpiredMultipartUploadsBucket;
@@ -364,10 +363,4 @@ public interface KeyManager extends OzoneManagerFS, IOzoneAcl {
    * @return BackgroundService
    */
   CompactionService getCompactionService();
-
-  /**
-   * Returns the instance of key/object lifecycle service.
-   * @return Background service.
-   */
-  KeyLifecycleService getKeyLifecycleService();
 }

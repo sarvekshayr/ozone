@@ -38,7 +38,6 @@ import org.apache.hadoop.hdds.utils.db.TablePrefixInfo;
 import org.apache.hadoop.hdds.utils.db.cache.CacheKey;
 import org.apache.hadoop.hdds.utils.db.cache.CacheValue;
 import org.apache.hadoop.ozone.common.BlockGroup;
-import org.apache.hadoop.ozone.om.exceptions.OMException;
 import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.ListKeysResult;
 import org.apache.hadoop.ozone.om.helpers.ListOpenFilesResult;
@@ -48,7 +47,6 @@ import org.apache.hadoop.ozone.om.helpers.OmDBTenantState;
 import org.apache.hadoop.ozone.om.helpers.OmDBUserPrincipalInfo;
 import org.apache.hadoop.ozone.om.helpers.OmDirectoryInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
-import org.apache.hadoop.ozone.om.helpers.OmLifecycleConfiguration;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
@@ -496,23 +494,6 @@ public interface OMMetadataManager extends DBStoreHAManager, AutoCloseable {
   Table<String, String> getSnapshotRenamedTable();
 
   Table<String, CompactionLogEntry> getCompactionLogTable();
-
-  Table<String, OmLifecycleConfiguration> getLifecycleConfigurationTable();
-
-  /**
-   * @return list all LifecycleConfigurations.
-   */
-  List<OmLifecycleConfiguration> listLifecycleConfigurations() throws OMException;
-
-  /**
-   * Fetches the lifecycle configuration by bucketName.
-   *
-   * @param bucketName bucketName of the lifecycle configuration
-   * @return OmLifecycleConfiguration
-   * @throws IOException
-   */
-  OmLifecycleConfiguration getLifecycleConfiguration(String volumeName,
-      String bucketName) throws IOException;
 
   /**
    * Gets the OM Meta table.

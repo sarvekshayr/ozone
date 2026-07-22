@@ -42,12 +42,6 @@ import static org.apache.hadoop.ozone.OzoneConsts.ETAG;
 import static org.apache.hadoop.ozone.OzoneConsts.OZONE_URI_DELIMITER;
 import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_DIR_DELETING_SERVICE_INTERVAL;
 import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_DIR_DELETING_SERVICE_INTERVAL_DEFAULT;
-import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_KEY_LIFECYCLE_SERVICE_INTERVAL;
-import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_KEY_LIFECYCLE_SERVICE_INTERVAL_DEFAULT;
-import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_KEY_LIFECYCLE_SERVICE_TIMEOUT;
-import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_KEY_LIFECYCLE_SERVICE_TIMEOUT_DEFAULT;
-import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_KEY_LIFECYCLE_SERVICE_WORKERS;
-import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_KEY_LIFECYCLE_SERVICE_WORKERS_DEFAULT;
 import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_OM_COMPACTION_SERVICE_COLUMNFAMILIES;
 import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_OM_COMPACTION_SERVICE_COLUMNFAMILIES_DEFAULT;
 import static org.apache.hadoop.ozone.om.OMConfigKeys.OZONE_OM_COMPACTION_SERVICE_ENABLED;
@@ -182,7 +176,6 @@ import org.apache.hadoop.ozone.om.request.util.OMMultipartUploadUtils;
 import org.apache.hadoop.ozone.om.service.CompactionService;
 import org.apache.hadoop.ozone.om.service.DirectoryDeletingService;
 import org.apache.hadoop.ozone.om.service.KeyDeletingService;
-import org.apache.hadoop.ozone.om.service.KeyLifecycleService;
 import org.apache.hadoop.ozone.om.service.MultipartUploadCleanupService;
 import org.apache.hadoop.ozone.om.service.OpenKeyCleanupService;
 import org.apache.hadoop.ozone.om.service.SnapshotDeletingService;
@@ -230,7 +223,6 @@ public class KeyManagerImpl implements KeyManager {
   private BackgroundService multipartUploadCleanupService;
   private DNSToSwitchMapping dnsToSwitchMapping;
   private CompactionService compactionService;
-  private KeyLifecycleService keyLifecycleService;
 
   public KeyManagerImpl(OzoneManager om, ScmClient scmClient,
       OzoneConfiguration conf, OMPerformanceMetrics metrics) {
@@ -334,7 +326,9 @@ public class KeyManagerImpl implements KeyManager {
       startSnapshotDefragService(configuration);
     }
 
-    if (snapshotDeletingService == null && ozoneManager.isFilesystemSnapshotEnabled()) {
+    if (snapshotDeletingService == null &&
+        ozoneManager.isFilesystemSnapshotEnabled()) {
+
       long snapshotServiceInterval = configuration.getTimeDuration(
           OZONE_SNAPSHOT_DELETING_SERVICE_INTERVAL,
           OZONE_SNAPSHOT_DELETING_SERVICE_INTERVAL_DEFAULT,
@@ -345,7 +339,8 @@ public class KeyManagerImpl implements KeyManager {
           TimeUnit.MILLISECONDS);
       try {
         snapshotDeletingService = new SnapshotDeletingService(
-            snapshotServiceInterval, snapshotServiceTimeout, ozoneManager);
+            snapshotServiceInterval, snapshotServiceTimeout,
+            ozoneManager);
         snapshotDeletingService.start();
       } catch (IOException e) {
         LOG.error("Error starting Snapshot Deleting Service", e);
@@ -365,18 +360,6 @@ public class KeyManagerImpl implements KeyManager {
           serviceInterval, TimeUnit.MILLISECONDS, serviceTimeout,
           ozoneManager, configuration);
       multipartUploadCleanupService.start();
-    }
-
-    if (keyLifecycleService == null) {
-      long lifecycleServiceInterval = configuration.getTimeDuration(OZONE_KEY_LIFECYCLE_SERVICE_INTERVAL,
-          OZONE_KEY_LIFECYCLE_SERVICE_INTERVAL_DEFAULT, TimeUnit.MILLISECONDS);
-      long lifecycleServiceTimeout = configuration.getTimeDuration(OZONE_KEY_LIFECYCLE_SERVICE_TIMEOUT,
-          OZONE_KEY_LIFECYCLE_SERVICE_TIMEOUT_DEFAULT, TimeUnit.MILLISECONDS);
-      int lifecycleServiceWorkerSize = configuration.getInt(OZONE_KEY_LIFECYCLE_SERVICE_WORKERS,
-          OZONE_KEY_LIFECYCLE_SERVICE_WORKERS_DEFAULT);
-      keyLifecycleService = new KeyLifecycleService(ozoneManager, this, lifecycleServiceInterval,
-          lifecycleServiceTimeout, lifecycleServiceWorkerSize, configuration);
-      keyLifecycleService.start();
     }
 
     Class<? extends DNSToSwitchMapping> dnsToSwitchMappingClass =
@@ -533,10 +516,6 @@ public class KeyManagerImpl implements KeyManager {
     if (compactionService != null) {
       compactionService.shutdown();
       compactionService = null;
-    }
-    if (keyLifecycleService != null) {
-      keyLifecycleService.shutdown();
-      keyLifecycleService = null;
     }
   }
 
@@ -1085,11 +1064,6 @@ public class KeyManagerImpl implements KeyManager {
   @Override
   public CompactionService getCompactionService() {
     return compactionService;
-  }
-
-  @Override
-  public KeyLifecycleService getKeyLifecycleService() {
-    return keyLifecycleService;
   }
 
   public boolean isSstFilteringSvcEnabled() {

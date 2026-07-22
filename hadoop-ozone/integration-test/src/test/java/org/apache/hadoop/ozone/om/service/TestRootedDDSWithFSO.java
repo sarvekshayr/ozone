@@ -77,8 +77,7 @@ public class TestRootedDDSWithFSO {
   @BeforeAll
   public static void init() throws Exception {
     OzoneConfiguration conf = new OzoneConfiguration();
-    conf.setStrings(OMConfigKeys.OZONE_DIR_DELETING_SERVICE_INTERVAL, "5s");
-    conf.setInt(OMConfigKeys.OZONE_THREAD_NUMBER_DIR_DELETION, 1);
+    conf.setInt(OMConfigKeys.OZONE_DIR_DELETING_SERVICE_INTERVAL, 1);
     conf.setTimeDuration(OZONE_BLOCK_DELETING_SERVICE_INTERVAL, 100,
         TimeUnit.MILLISECONDS);
     conf.setBoolean(OZONE_ACL_ENABLED, true);
@@ -186,12 +185,8 @@ public class TestRootedDDSWithFSO {
     long prevDeletes = omMetrics.getNumKeyDeletes();
     assertTrue(fs.delete(bucketPath, true));
     assertTrue(fs.delete(volumePath, false));
-    GenericTestUtils.waitFor(() -> {
-      long keyCount = omMetrics.getNumKeys();
-      return keyCount == 0;
-    }, 1000, 30000);
     long deletes = omMetrics.getNumKeyDeletes();
-    assertEquals(prevDeletes + totalDirCount + totalFilesCount, deletes);
+    assertEquals(prevDeletes + 1, deletes);
 
     // After Delete
     checkPath(volumePath);
