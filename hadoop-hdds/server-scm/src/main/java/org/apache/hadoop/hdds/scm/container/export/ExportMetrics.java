@@ -29,9 +29,9 @@ import org.apache.hadoop.ozone.OzoneConsts;
  * Metrics for async container ID export jobs on SCM.
  */
 @Metrics(about = "SCM Container Export Metrics", context = OzoneConsts.OZONE)
-public final class ContainerExportMetrics {
+public final class ExportMetrics {
 
-  private static final String SOURCE_NAME = ContainerExportMetrics.class.getSimpleName();
+  private static final String SOURCE_NAME = ExportMetrics.class.getSimpleName();
 
   @Metric(about = "Number of export jobs submitted")
   private MutableCounterLong numExportJobsSubmitted;
@@ -48,12 +48,12 @@ public final class ContainerExportMetrics {
   @Metric(about = "TAR bytes written by the most recent successful export job.")
   private MutableGaugeLong lastExportBytesWritten;
 
-  private ContainerExportMetrics() {
+  private ExportMetrics() {
   }
 
-  public static ContainerExportMetrics create() {
+  public static ExportMetrics create() {
     MetricsSystem ms = DefaultMetricsSystem.instance();
-    return ms.register(SOURCE_NAME, "SCM Container Export IDs Metrics", new ContainerExportMetrics());
+    return ms.register(SOURCE_NAME, "SCM Container Export IDs Metrics", new ExportMetrics());
   }
 
   public void unRegister() {

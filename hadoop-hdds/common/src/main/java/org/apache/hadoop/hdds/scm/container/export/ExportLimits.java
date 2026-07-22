@@ -20,7 +20,7 @@ package org.apache.hadoop.hdds.scm.container.export;
 /**
  * Shared limits and defaults for container ID export.
  */
-public final class ContainerExportLimits {
+public final class ExportLimits {
 
   public static final String EXPORT_SUBDIR = "exports";
 
@@ -29,6 +29,6 @@ public final class ContainerExportLimits {
   public static final int MAX_PAGE_SIZE = 1_000_000;
   public static final int MAX_SHARD_SIZE = 5_000_000;
 
-  private ContainerExportLimits() {
+  private ExportLimits() {
   }
 }

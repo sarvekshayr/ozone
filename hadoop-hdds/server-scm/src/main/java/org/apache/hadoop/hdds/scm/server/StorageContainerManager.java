@@ -283,7 +283,7 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
 
   private ReplicationManager replicationManager;
 
-  private ContainerExportManager containerExportManager;
+  private final ContainerExportManager containerExportManager;
 
   private SCMSafeModeManager scmSafeModeManager;
   private SCMCertificateClient scmCertificateClient;
@@ -438,6 +438,10 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
     reconfigurationHandler.registerCompleteCallback(tracingReconfigurationCallback);
 
     initializeSystemManagers(conf, configurator);
+
+    containerExportManager = new ContainerExportManager(
+        containerManager, this::checkLeader, conf, getScmId());
+    containerExportManager.start();
 
     if (isSecretKeyEnable(securityConfig)) {
       secretKeyManagerService = new SecretKeyManagerService(scmContext, conf,
@@ -878,7 +882,6 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
     // RM gets notified of expired pending delete from containerReplicaPendingOps by subscribing to it
     // so it can resend them.
     containerReplicaPendingOps.registerSubscriber(replicationManager);
-    containerExportManager = new ContainerExportManager(containerManager, conf, this::checkLeader);
     if (configurator.getScmSafeModeManager() != null) {
       scmSafeModeManager = configurator.getScmSafeModeManager();
     } else {
@@ -1683,9 +1686,7 @@ public final class StorageContainerManager extends ServiceRuntimeInfoImpl
 
     stopReplicationManager();
 
-    if (containerExportManager != null) {
-      containerExportManager.shutdown();
-    }
+    containerExportManager.shutdown();
 
     try {
       LOG.info("Stopping the Datanode Admin Monitor.");
