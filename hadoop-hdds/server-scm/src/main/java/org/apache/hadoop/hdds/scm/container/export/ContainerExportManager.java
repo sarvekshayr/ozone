@@ -458,6 +458,7 @@ public class ContainerExportManager {
       LOG.info("{}: export job {} was cancelled", scmId, jobIdValue);
       Thread.currentThread().interrupt();
     } catch (IOException | RuntimeException e) {
+      succeeded = false;
       job.setExecutionState(ExportJob.ExecutionState.FAILED);
       job.setErrorMessage(e.getMessage() != null ? e.getMessage() : e.toString());
       cleanupFailedArtifacts(jobDir, tarFile, jobIdValue);
