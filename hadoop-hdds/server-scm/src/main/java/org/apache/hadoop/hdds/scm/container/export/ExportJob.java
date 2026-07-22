@@ -31,6 +31,18 @@ import org.apache.hadoop.hdds.scm.container.ContainerID;
  */
 public final class ExportJob {
 
+  private final Id id;
+  private final ExportScope scope;
+  private final String timestamp;
+  private final ContainerID startContainerId;
+  private final ExportSizing sizing;
+  private volatile String tarPath;
+  private volatile ExecutionState executionState = ExecutionState.RUNNING;
+  private volatile long totalRows;
+  private volatile long startTimeNs;
+  private volatile long endTimeNs;
+  private volatile String errorMessage;
+
   /**
    * Unique job identifier.
    */
@@ -132,18 +144,6 @@ public final class ExportJob {
     SUCCEEDED,
     FAILED
   }
-
-  private final Id id;
-  private final ExportScope scope;
-  private final String timestamp;
-  private final ContainerID startContainerId;
-  private final ExportSizing sizing;
-  private volatile String tarPath;
-  private volatile ExecutionState executionState = ExecutionState.RUNNING;
-  private volatile long totalRows;
-  private volatile long startTimeNs;
-  private volatile long endTimeNs;
-  private volatile String errorMessage;
 
   ExportJob(Id id, ExportScope scope, String timestamp, String tarPath, ContainerID startContainerId,
       ExportSizing sizing) {
