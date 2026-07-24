@@ -104,6 +104,8 @@ public class TestContainerExportManager {
     assertTrue(status.getTarPath().endsWith(".tar"));
     File tarPath = new File(status.getTarPath());
     assertTrue(tarPath.exists());
+    assertFalse(Files.exists(tempDir.toPath().resolve(
+        ContainerExportManager.EXPORT_JOB_DIR_PREFIX + jobId.getValue())));
 
     Path extractDir = Files.createTempDirectory("export-tar");
     try {
@@ -304,6 +306,22 @@ public class TestContainerExportManager {
         TEST_MAX_TERMINAL_JOBS, () -> true);
     assertTrue(tar.exists());
     assertNull(exportManager.getExportStatus(jobId));
+  }
+
+  @Test
+  public void testOrphanWorkDirWithoutMarkerDoesNotDeleteCompletedTar() throws Exception {
+    String jobId = UUID.randomUUID().toString();
+    File completedTar = new File(tempDir, "container-ids-health-MISSING-20260101T000000Z-" + jobId + ".tar");
+    assertTrue(completedTar.createNewFile());
+    Path orphanWorkDir = tempDir.toPath().resolve(ContainerExportManager.EXPORT_JOB_DIR_PREFIX + jobId);
+    Files.createDirectories(orphanWorkDir.resolve("work"));
+
+    exportManager.shutdown();
+    exportManager = newExportManager(TEST_DEFAULT_SHARD_SIZE, TEST_DEFAULT_PAGE_SIZE,
+        TEST_MAX_TERMINAL_JOBS, () -> true);
+
+    assertTrue(completedTar.exists());
+    assertFalse(Files.exists(orphanWorkDir));
   }
 
   @Test

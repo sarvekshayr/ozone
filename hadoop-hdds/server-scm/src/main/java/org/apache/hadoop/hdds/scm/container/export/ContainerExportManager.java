@@ -64,7 +64,9 @@ import org.slf4j.LoggerFactory;
  * <p>Job status is kept in memory only. On SCM restart or leader failover, in-flight jobs are lost
  * and the operator must re-submit on the new leader. Completed TAR files are kept on disk while their
  * job status remains in {@code jobTracker}; when a terminal job is evicted past {@code maxTerminalJobs},
- * its TAR is deleted as well. On startup, incomplete work ({@code {jobId}.in-progress} markers,
+ * its TAR is deleted as well. After restart, {@code maxTerminalJobs} no longer applies to TAR files
+ * already on disk because {@code jobTracker} is empty; those files remain until removed manually.
+ * On startup, incomplete work ({@code {jobId}.in-progress} markers,
  * {@code export-{jobId}} work directories, and matching partial TAR files) is removed.
  */
 public class ContainerExportManager {
@@ -267,8 +269,13 @@ public class ContainerExportManager {
     for (File child : children) {
       if (child.isDirectory()) {
         String jobId = jobIdFromExportDirName(child.getName());
-        if (jobId != null) {
+        if (jobId == null) {
+          continue;
+        }
+        if (inProgressMarkerFile(jobId).exists()) {
           removeIncompleteExportArtifacts(jobId);
+        } else {
+          FileUtils.deleteQuietly(child);
         }
       }
     }
@@ -418,39 +425,29 @@ public class ContainerExportManager {
         }
 
         writer = closeWriter(writer);
-        if (totalRows == 0) {
-          clearExportInProgress(jobIdValue);
-          FileUtils.deleteQuietly(workDir.toFile());
-          FileUtils.deleteQuietly(jobDir.toFile());
-          job.setExecutionState(ExportJob.ExecutionState.SUCCEEDED);
-          job.setTarPath(null);
-          succeeded = true;
-          LOG.info("{}: export job {} completed with zero matching containers", scmId, jobIdValue);
-          return;
-        }
-
         if (currentShardPath != null) {
           if (appendableTar == null) {
             appendableTar = Archiver.openForAppend(tarFile);
           }
           appendShardToTar(appendableTar, currentShardPath, job, fileIndex);
         }
+      } finally {
+        closeExportResources(writer, appendableTar);
+      }
 
-        FileUtils.deleteQuietly(workDir.toFile());
-        FileUtils.deleteQuietly(jobDir.toFile());
-        job.setExecutionState(ExportJob.ExecutionState.SUCCEEDED);
-        succeeded = true;
+      if (Files.exists(jobDir)) {
+        FileUtils.deleteDirectory(jobDir.toFile());
+      }
+      job.setExecutionState(ExportJob.ExecutionState.SUCCEEDED);
+      if (totalRows == 0) {
+        job.setTarPath(null);
+        LOG.info("{}: export job {} completed with zero matching containers", scmId, jobIdValue);
+      } else {
         LOG.info("{}: export job {} completed ({} rows, tar={}).",
             scmId, jobIdValue, totalRows, tarFile.getAbsolutePath());
-      } finally {
-        closeWriter(writer);
-        if (appendableTar != null) {
-          appendableTar.close();
-          if (succeeded) {
-            clearExportInProgress(jobIdValue);
-          }
-        }
       }
+      clearExportInProgress(jobIdValue);
+      succeeded = true;
     } catch (InterruptedException e) {
       job.setExecutionState(ExportJob.ExecutionState.FAILED);
       job.setErrorMessage(e.getMessage());
@@ -496,6 +493,32 @@ public class ContainerExportManager {
       FileUtils.deleteQuietly(tarFile);
     }
     clearExportInProgress(jobId);
+  }
+
+  private static void closeExportResources(BufferedWriter writer, Archiver.AppendableTar tar) throws IOException {
+    IOException failure = null;
+    if (writer != null) {
+      try {
+        writer.flush();
+        writer.close();
+      } catch (IOException ex) {
+        failure = ex;
+      }
+    }
+    if (tar != null) {
+      try {
+        tar.close();
+      } catch (IOException ex) {
+        if (failure == null) {
+          failure = ex;
+        } else {
+          failure.addSuppressed(ex);
+        }
+      }
+    }
+    if (failure != null) {
+      throw failure;
+    }
   }
 
   private static BufferedWriter closeWriter(BufferedWriter writer) throws IOException {
